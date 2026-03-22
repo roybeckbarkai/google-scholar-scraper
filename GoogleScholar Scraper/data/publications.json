@@ -1,0 +1,13 @@
+{
+  "profileName": "Test User",
+  "publications": [
+    {
+      "id": "1",
+      "title": "Test Paper",
+      "authors": "T User",
+      "venue": "Test Conf",
+      "year": "2024"
+    }
+  ],
+  "lastSaved": "2026-03-22T16:17:01.870Z"
+}

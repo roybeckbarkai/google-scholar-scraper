@@ -42,7 +42,7 @@ const App = () => {
       const processed = data.publications.map(pub => {
         const isLead = isFirstAuthor(pub.authors, data.profileName);
         const isOther = isAuthor(pub.authors, data.profileName) && !isLead;
-        const isPreprint = isUnpublished(pub.venue);
+        const isPreprint = isPreprintVenue(pub.venue);
         
         return { ...pub, isLead, isOther, isPreprint };
       });
@@ -55,23 +55,73 @@ const App = () => {
     }
   };
 
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileName, publications })
+      });
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      alert('Dataset saved successfully!');
+    } catch (err) {
+      setError('Save failed: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoad = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/load');
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      setProfileName(data.profileName);
+      setPublications(data.publications);
+    } catch (err) {
+      setError('Load failed: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDOI = async (id, title, venue) => {
+    try {
+      const response = await fetch('/api/doi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, venue })
+      });
+      const data = await response.json();
+      if (data.doi) {
+        setPublications(prev => prev.map(p => p.id === id ? { ...p, doi: data.doi } : p));
+      } else {
+        alert('No DOI found for this paper.');
+      }
+    } catch (err) {
+      console.error('DOI fetch failed', err);
+    }
+  };
+
   const isAuthor = (authorList, profile) => {
     if (!profile) return false;
-    const normalizedProfile = profile.toLowerCase().trim();
-    return authorList.toLowerCase().includes(normalizedProfile);
+    const lastName = profile.split(' ').pop().toLowerCase();
+    return authorList.toLowerCase().includes(lastName);
   };
 
   const isFirstAuthor = (authorList, profile) => {
     if (!profile) return false;
     const firstAuthor = authorList.split(',')[0].toLowerCase().trim();
-    const normalizedProfile = profile.toLowerCase().trim();
-    // Check if profile name is part of the first author string
-    return firstAuthor.includes(normalizedProfile) || normalizedProfile.includes(firstAuthor);
+    const lastName = profile.split(' ').pop().toLowerCase();
+    return firstAuthor.includes(lastName);
   };
 
-  const isUnpublished = (venue) => {
+  const isPreprintVenue = (venue) => {
     const v = venue.toLowerCase();
-    return v.includes('arxiv') || v.includes('preprint') || v.includes('biorxiv') || v.includes('unpublished') || venue.trim() === '';
+    return v.includes('arxiv') || v.includes('preprint') || v.includes('biorxiv') || v.includes('unpublished') || (venue && venue.trim() === '');
   };
 
   const toggleCheckbox = (id, field) => {
@@ -90,9 +140,10 @@ const App = () => {
     const entry = {
       ...newEntry,
       id,
+      id,
       isLead: isFirstAuthor(newEntry.authors, profileName),
       isOther: isAuthor(newEntry.authors, profileName) && !isFirstAuthor(newEntry.authors, profileName),
-      isPreprint: isUnpublished(newEntry.venue)
+      isPreprint: isPreprintVenue(newEntry.venue)
     };
     setPublications([entry, ...publications]);
     setShowAddModal(false);
@@ -109,15 +160,22 @@ const App = () => {
   }, [publications]);
 
   const renderAuthor = (authors, profile) => {
-    if (!profile) return authors;
-    const parts = authors.split(new RegExp(`(${profile})`, 'gi'));
+    if (!profile || !authors) return authors;
+    const lastName = profile.split(' ').pop();
+    if (!lastName) return authors;
+    
+    // Escape regex special characters
+    const escapedLastName = lastName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = authors.split(new RegExp(`(\\b.*?${escapedLastName}\\b)`, 'gi'));
+    
     return (
       <span>
-        {parts.map((part, i) => 
-          part.toLowerCase() === profile.toLowerCase() 
-            ? <strong key={i} className="text-primary-700 font-bold">{part}</strong> 
-            : part
-        )}
+        {parts.map((part, i) => {
+          if (part.toLowerCase().includes(lastName.toLowerCase())) {
+            return <strong key={i} className="text-primary-700 font-bold border-b-2 border-primary-200">{part}</strong>;
+          }
+          return part;
+        })}
       </span>
     );
   };
@@ -146,7 +204,7 @@ const App = () => {
             <input
               type="url"
               placeholder="Paste Google Scholar Profile URL..."
-              className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+              className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all text-sm"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               required
@@ -161,6 +219,22 @@ const App = () => {
             {loading ? 'Scraping...' : 'Fetch List'}
           </button>
         </form>
+        
+        <div className="flex justify-center gap-4 mt-6 pt-6 border-t border-slate-100">
+          <button 
+            onClick={handleLoad}
+            className="flex items-center gap-2 text-slate-600 hover:text-primary-600 text-sm font-medium transition-colors"
+          >
+            <Plus className="w-4 h-4 rotate-45" /> Load Saved Dataset
+          </button>
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 text-slate-600 hover:text-primary-600 text-sm font-medium transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Add Manual Entry
+          </button>
+        </div>
+
         {error && (
           <div className="mt-4 p-3 bg-red-50 border border-red-100 text-red-600 rounded-lg flex items-center gap-2 text-sm">
             <AlertCircle className="w-4 h-4" />
@@ -186,16 +260,17 @@ const App = () => {
             </h2>
             <div className="flex gap-3">
               <button 
-                onClick={() => setShowAddModal(true)}
+                onClick={handleSave}
                 className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                title="Save this dataset locally"
               >
-                <Plus className="w-4 h-4" /> Add Item
+                <Download className="w-4 h-4" /> Save
               </button>
               <button 
                 onClick={handleExport}
                 className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
-                <Download className="w-4 h-4" /> Export
+                <Download className="w-4 h-4" /> Print
               </button>
             </div>
           </div>
@@ -211,41 +286,58 @@ const App = () => {
                   <th>DOI</th>
                   <th className="text-center">Year</th>
                   <th className="text-center">Citations</th>
-                  <th className="text-center">Lead</th>
-                  <th className="text-center">Other</th>
+                  <th className="text-center">First Aut.</th>
+                  <th className="text-center">Other Aut.</th>
                   <th className="text-center">Preprint</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {publications.map((pub) => (
-                  <tr key={pub.id}>
+                  <tr key={pub.id} className={pub.isLead ? "bg-primary-50/30" : ""}>
                     <td className="max-w-xs">
                       <a href={pub.link} target="_blank" rel="noopener noreferrer" className="font-medium text-slate-900 hover:text-primary-600 transition-colors">
                         {pub.title}
                       </a>
                     </td>
-                    <td className="max-w-xs">{renderAuthor(pub.authors, profileName)}</td>
-                    <td>{pub.venue}</td>
+                    <td className="max-w-xs text-xs">{renderAuthor(pub.authors, profileName)}</td>
+                    <td className="text-xs italic">{pub.venue}</td>
                     <td>
-                      <input 
-                        type="text" 
-                        placeholder="DOI..." 
-                        className="bg-transparent border-none p-0 text-xs focus:ring-0 w-24"
-                        value={pub.doi}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, doi: val } : p));
-                        }}
-                      />
+                      <div className="flex items-center gap-1">
+                        <input 
+                          type="text" 
+                          placeholder="DOI..." 
+                          className="bg-slate-100/50 rounded px-2 py-1 text-[10px] focus:ring-1 focus:ring-primary-400 w-24 outline-none"
+                          value={pub.doi}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, doi: val } : p));
+                          }}
+                        />
+                        {!pub.doi && (
+                          <button 
+                            onClick={() => fetchDOI(pub.id, pub.title, pub.venue)}
+                            className="p-1 text-primary-500 hover:text-primary-700 transition-colors"
+                            title="Find DOI"
+                          >
+                            <Search className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
                     </td>
-                    <td className="text-center">{pub.year}</td>
+                    <td className="text-center text-xs font-semibold">{pub.year}</td>
                     <td className="text-center font-mono text-xs">{pub.citations}</td>
                     <td className="text-center">
-                      <Checkbox checked={pub.isLead} onChange={() => toggleCheckbox(pub.id, 'isLead')} />
+                      <Radio 
+                        checked={pub.isLead} 
+                        onChange={() => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, isLead: true, isOther: false } : p))} 
+                      />
                     </td>
                     <td className="text-center">
-                      <Checkbox checked={pub.isOther} onChange={() => toggleCheckbox(pub.id, 'isOther')} />
+                      <Radio 
+                        checked={pub.isOther} 
+                        onChange={() => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, isLead: false, isOther: true } : p))} 
+                      />
                     </td>
                     <td className="text-center">
                       <Checkbox checked={pub.isPreprint} onChange={() => toggleCheckbox(pub.id, 'isPreprint')} />
@@ -376,16 +468,16 @@ const StatCard = ({ label, value, icon }) => (
   </div>
 );
 
-const Checkbox = ({ checked, onChange }) => (
+const Radio = ({ checked, onChange }) => (
   <button
     onClick={onChange}
-    className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all ${
+    className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
       checked 
-        ? 'bg-primary-600 border-primary-600 text-white' 
+        ? 'bg-primary-600 border-primary-600 text-white shadow-inner shadow-primary-800' 
         : 'bg-white border-slate-300 hover:border-primary-400'
     }`}
   >
-    {checked && <Check className="w-4 h-4 stroke-[3]" />}
+    {checked && <div className="w-2 h-2 rounded-full bg-white" />}
   </button>
 );
 

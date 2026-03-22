@@ -2,6 +2,13 @@ import express from 'express';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import cors from 'cors';
+import { writeFile, readFile, mkdir } from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DATA_DIR = path.join(__dirname, 'data');
+const DATA_FILE = path.join(DATA_DIR, 'publications.json');
 
 const app = express();
 const PORT = 3001;
@@ -77,6 +84,61 @@ app.post('/api/scrape', async (req, res) => {
   } catch (error) {
     console.error('Scrape error:', error.message);
     res.status(500).json({ error: 'Failed to scrape Google Scholar. ' + error.message });
+  }
+});
+
+// Save dataset locally
+app.post('/api/save', async (req, res) => {
+  try {
+    const { profileName, publications } = req.body;
+    await mkdir(DATA_DIR, { recursive: true });
+    await writeFile(DATA_FILE, JSON.stringify({ profileName, publications, lastSaved: new Date() }, null, 2));
+    res.json({ message: 'Dataset saved successfully' });
+  } catch (error) {
+    console.error('Save error:', error.message);
+    res.status(500).json({ error: 'Failed to save dataset: ' + error.message });
+  }
+});
+
+// Load dataset locally
+app.get('/api/load', async (req, res) => {
+  try {
+    const data = await readFile(DATA_FILE, 'utf-8');
+    res.json(JSON.parse(data));
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return res.status(404).json({ error: 'No saved dataset found.' });
+    }
+    console.error('Load error:', error.message);
+    res.status(500).json({ error: 'Failed to load dataset: ' + error.message });
+  }
+});
+
+// Lookup DOI using Crossref API
+app.post('/api/doi', async (req, res) => {
+  const { title, venue } = req.body;
+  if (!title) return res.status(400).json({ error: 'Title is required' });
+
+  try {
+    // Crossref API search
+    const query = encodeURIComponent(`${title} ${venue || ''}`);
+    const response = await axios.get(`https://api.crossref.org/works?query.bibliographic=${query}&rows=1`, {
+      headers: { 'User-Agent': 'ScholarScraper/1.0 (mailto:scholar@example.com)' }
+    });
+
+    const items = response.data?.message?.items;
+    if (items && items.length > 0) {
+      const bestMatch = items[0];
+      // Basic check: title should match reasonably well
+      const matchTitle = bestMatch.title?.[0]?.toLowerCase() || '';
+      if (matchTitle.includes(title.toLowerCase().substring(0, 20))) {
+        return res.json({ doi: bestMatch.DOI });
+      }
+    }
+    res.status(404).json({ error: 'No DOI found for this publication.' });
+  } catch (error) {
+    console.error('DOI error:', error.message);
+    res.status(500).json({ error: 'Failed to lookup DOI: ' + error.message });
   }
 });
 
