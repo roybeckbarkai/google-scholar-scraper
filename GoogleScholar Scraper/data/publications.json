@@ -1,13 +1,136 @@
 {
-  "profileName": "Test User",
+  "profileName": "Tamara Ehm",
   "publications": [
     {
-      "id": "1",
-      "title": "Test Paper",
-      "authors": "T User",
-      "venue": "Test Conf",
-      "year": "2024"
+      "id": "gs-0",
+      "title": "Order from disorder with intrinsically disordered peptide amphiphiles",
+      "authors": "Jacoby, Guy; Segal Asher, Merav; Ehm, Tamara; Abutbul Ionita, Inbal; Shinar, Hila; Azoulay-Ginsburg, Salome; Zemach, Ido; Koren, Gil; Danino, Dganit; Kozlov, Michael M.; Amir, Roey J.; Beck, Roy",
+      "venue": "Journal of the American Chemical Society 143 (30), 11879-11888",
+      "year": "2021",
+      "citations": "28",
+      "link": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=U_crS3IAAAAJ&pagesize=100&citation_for_view=U_crS3IAAAAJ:qjMakFHDy7sC",
+      "doi": "10.1021/jacs.1c06133",
+      "isLead": false,
+      "isOther": false,
+      "isPreprint": false
+    },
+    {
+      "id": "gs-1",
+      "title": "Intramolecular structural heterogeneity altered by long-range contacts in an intrinsically disordered protein",
+      "authors": "Koren, Gil; Meir, Sagi; Holschuh, Lennard; Mertens, Haydyn D. T.; Ehm, Tamara; Yahalom, Nadav; Golombek, Adina; Schwartz, Tal; Svergun, Dmitri I.; Saleh, Omar A.; Dzubiella, Joachim; Beck, Roy",
+      "venue": "Proceedings of the National Academy of Sciences 120 (30), e2220180120",
+      "year": "2023",
+      "citations": "23",
+      "link": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=U_crS3IAAAAJ&pagesize=100&citation_for_view=U_crS3IAAAAJ:2osOgNQ5qMEC",
+      "doi": "10.1073/pnas.2220180120",
+      "isLead": false,
+      "isOther": false,
+      "isPreprint": false
+    },
+    {
+      "id": "gs-2",
+      "title": "Self-assembly of tunable intrinsically disordered peptide amphiphiles",
+      "authors": "T Ehm, H Shinar, G Jacoby, S Meir, G Koren, M Segal Asher, J Korpanty, ...",
+      "venue": "Biomacromolecules 24 (1), 98-108",
+      "year": "2022",
+      "citations": "17",
+      "link": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=U_crS3IAAAAJ&pagesize=100&citation_for_view=U_crS3IAAAAJ:u-x6o8ySG0sC",
+      "doi": "10.1021/acs.biomac.2c00866.s001",
+      "isLead": true,
+      "isOther": false,
+      "isPreprint": false
+    },
+    {
+      "id": "gs-3",
+      "title": "Intrinsically disordered proteins at the nano-scale",
+      "authors": "Ehm, T; Shinar, H; Meir, S; Sekhon, A; Sethi, V; Morgan, I L; Rahamim, G; Saleh, O A; Beck, R",
+      "venue": "Nano Futures 5 (2), 022501",
+      "year": "2021",
+      "citations": "13",
+      "link": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=U_crS3IAAAAJ&pagesize=100&citation_for_view=U_crS3IAAAAJ:9yKSN-GCB0IC",
+      "doi": "10.1088/2399-1984/abfb7c",
+      "isLead": true,
+      "isOther": false,
+      "isPreprint": false
+    },
+    {
+      "id": "gs-4",
+      "title": "Architectural change of the shell-forming block from linear to V-shaped accelerates micellar disassembly, but slows the complete enzymatic degradation of the amphiphiles",
+      "authors": "M Segal, L Ozery, G Slor, SS Wagle, T Ehm, R Beck, RJ Amir",
+      "venue": "Biomacromolecules 21 (10), 4076-4086",
+      "year": "2020",
+      "citations": "8",
+      "link": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=U_crS3IAAAAJ&pagesize=100&citation_for_view=U_crS3IAAAAJ:IjCSPb-OGe4C",
+      "doi": "10.1021/acs.biomac.0c00882.s001",
+      "isLead": false,
+      "isOther": false,
+      "isPreprint": false
+    },
+    {
+      "id": "gs-5",
+      "title": "Interferon-induced activation of dendritic cells and monocytes by yellow fever vaccination correlates with early antibody responses",
+      "authors": "Winheim, Elena; Santos-Peral, Antonio; Ehm, Tamara; Rinke, Linus; Riemer, Sandra; Zaucha, Magdalena; Goresch, Sebastian; Lehmann, Lisa; Eisenächer, Katharina; Pritsch, Michael; Barba-Spaeth, Giovanna; Straub, Tobias; Rothenfusser, Simon; Krug, Anne B.",
+      "venue": "Proceedings of the National Academy of Sciences 122 (19), e2422236122",
+      "year": "2025",
+      "citations": "3",
+      "link": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=U_crS3IAAAAJ&pagesize=100&citation_for_view=U_crS3IAAAAJ:UeHWp8X0CEIC",
+      "doi": "10.1073/pnas.2422236122",
+      "isLead": false,
+      "isOther": false,
+      "isPreprint": false
+    },
+    {
+      "id": "gs-6",
+      "title": "3D-printed SAXS chamber for controlled in situ dialysis and optical characterization",
+      "authors": "Ehm, Tamara; Philipp, Julian; Barkey, Martin; Ober, Martina; Brinkop, Achim Theo; Simml, David; von Westphalen, Miriam; Nickel, Bert; Beck, Roy; Rädler, Joachim O.",
+      "venue": "Synchrotron Radiation 29 (4), 1014-1019",
+      "year": "2022",
+      "citations": "3",
+      "link": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=U_crS3IAAAAJ&pagesize=100&citation_for_view=U_crS3IAAAAJ:Tyk-4Ss8FVUC",
+      "doi": "10.1107/s1600577522005136",
+      "isLead": true,
+      "isOther": false,
+      "isPreprint": false
+    },
+    {
+      "id": "gs-7",
+      "title": "Interferon-induced activation state of circulating dendritic cells and monocytes triggered by yellow fever vaccination correlates with early protective antibody responses",
+      "authors": "Winheim, Elena; Santos-Peral, Antonio; Ehm, Tamara; Rinke, Linus; Riemer, Sandra; Zaucha, Magdalena; Goresch, Sebastian; Lehmann, Lisa; Eisenächer, Katharina; Pritsch, Michael; Barba-Spaeth, Giovanna; Straub, Tobias; Rothenfusser, Simon; Krug, Anne B.",
+      "venue": "bioRxiv, 2024.07. 31.606034",
+      "year": "2024",
+      "citations": "0",
+      "link": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=U_crS3IAAAAJ&pagesize=100&citation_for_view=U_crS3IAAAAJ:zYLM7Y9cAGgC",
+      "doi": "10.1101/2024.07.31.606034",
+      "isLead": false,
+      "isOther": false,
+      "isPreprint": true
+    },
+    {
+      "id": "gs-8",
+      "title": "Self-assembly of intrinsically disordered peptide amphiphiles",
+      "authors": "T Ehm",
+      "venue": "lmu",
+      "year": "2022",
+      "citations": "0",
+      "link": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=U_crS3IAAAAJ&pagesize=100&citation_for_view=U_crS3IAAAAJ:d1gkVwhDpl0C",
+      "doi": "",
+      "isLead": true,
+      "isOther": false,
+      "isPreprint": false
+    },
+    {
+      "id": "gs-9",
+      "title": "Structural characterization of self-assembled inspired myelin sheath complexes: biophysical perspective on adrenoleukodystrophy",
+      "authors": "T Ehm, O Axelrod, R Beck",
+      "venue": "",
+      "year": "",
+      "citations": "0",
+      "link": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=U_crS3IAAAAJ&pagesize=100&citation_for_view=U_crS3IAAAAJ:u5HHmVD_uO8C",
+      "doi": "",
+      "isLead": true,
+      "isOther": false,
+      "isPreprint": true
     }
   ],
-  "lastSaved": "2026-03-22T16:17:01.870Z"
+  "lastSaved": "2026-03-22T17:17:48.645Z"
 }

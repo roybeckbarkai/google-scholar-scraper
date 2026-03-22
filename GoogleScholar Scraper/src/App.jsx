@@ -8,6 +8,7 @@ const App = () => {
   const [profileName, setProfileName] = useState('');
   const [publications, setPublications] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [enrichingIds, setEnrichingIds] = useState(new Set());
   
   // New entry state
   const [newEntry, setNewEntry] = useState({
@@ -33,21 +34,29 @@ const App = () => {
         body: JSON.stringify({ url })
       });
       
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Server returned an invalid response. Please check if the backend is running.');
+      }
+      
+      if (!response.ok || data.error) throw new Error(data.error || `Server error: ${response.status}`);
       
       setProfileName(data.profileName);
       
       // Auto-populate checkboxes based on profile name
       const processed = data.publications.map(pub => {
         const isLead = isFirstAuthor(pub.authors, data.profileName);
-        const isOther = isAuthor(pub.authors, data.profileName) && !isLead;
         const isPreprint = isPreprintVenue(pub.venue);
         
-        return { ...pub, isLead, isOther, isPreprint };
+        return { ...pub, isLead, isPreprint };
       });
       
       setPublications(processed);
+      
+      // Start auto-enrichment
+      autoEnrich(processed);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -88,40 +97,69 @@ const App = () => {
     }
   };
 
+  const autoEnrich = async (pubs) => {
+    for (const pub of pubs) {
+      if (!pub.doi) {
+        await fetchDOI(pub.id, pub.title, pub.venue);
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 600));
+      }
+    }
+  };
+
   const fetchDOI = async (id, title, venue) => {
+    setEnrichingIds(prev => new Set(prev).add(id));
     try {
       const response = await fetch('/api/doi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, venue })
       });
-      const data = await response.json();
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        return; // Silent fail for auto-enrichment
+      }
+
       if (data.doi) {
-        setPublications(prev => prev.map(p => p.id === id ? { ...p, doi: data.doi } : p));
-      } else {
-        alert('No DOI found for this paper.');
+        setPublications(prev => prev.map(p => p.id === id ? { 
+          ...p, 
+          doi: data.doi,
+          authors: data.authors || p.authors
+        } : p));
       }
     } catch (err) {
       console.error('DOI fetch failed', err);
+    } finally {
+      setEnrichingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
   const isAuthor = (authorList, profile) => {
-    if (!profile) return false;
+    if (!profile || !authorList) return false;
     const lastName = profile.split(' ').pop().toLowerCase();
-    return authorList.toLowerCase().includes(lastName);
+    return String(authorList).toLowerCase().includes(lastName);
   };
 
   const isFirstAuthor = (authorList, profile) => {
-    if (!profile) return false;
-    const firstAuthor = authorList.split(',')[0].toLowerCase().trim();
+    if (!profile || !authorList) return false;
+    const authors = String(authorList).split(/[,;]/);
+    if (authors.length === 0) return false;
+    const firstAuthor = authors[0].toLowerCase().trim();
     const lastName = profile.split(' ').pop().toLowerCase();
     return firstAuthor.includes(lastName);
   };
 
   const isPreprintVenue = (venue) => {
-    const v = venue.toLowerCase();
-    return v.includes('arxiv') || v.includes('preprint') || v.includes('biorxiv') || v.includes('unpublished') || (venue && venue.trim() === '');
+    if (!venue) return true;
+    const v = String(venue).toLowerCase();
+    return v.includes('arxiv') || v.includes('preprint') || v.includes('biorxiv') || v.includes('unpublished');
   };
 
   const toggleCheckbox = (id, field) => {
@@ -140,9 +178,7 @@ const App = () => {
     const entry = {
       ...newEntry,
       id,
-      id,
       isLead: isFirstAuthor(newEntry.authors, profileName),
-      isOther: isAuthor(newEntry.authors, profileName) && !isFirstAuthor(newEntry.authors, profileName),
       isPreprint: isPreprintVenue(newEntry.venue)
     };
     setPublications([entry, ...publications]);
@@ -151,11 +187,11 @@ const App = () => {
   };
 
   const stats = useMemo(() => {
+    const pubs = Array.isArray(publications) ? publications : [];
     return {
-      total: publications.length,
-      lead: publications.filter(p => p.isLead).length,
-      other: publications.filter(p => p.isOther).length,
-      unpublished: publications.filter(p => p.isPreprint).length
+      total: pubs.length,
+      lead: pubs.filter(p => p && p.isLead).length,
+      unpublished: pubs.filter(p => p && p.isPreprint).length
     };
   }, [publications]);
 
@@ -164,18 +200,23 @@ const App = () => {
     const lastName = profile.split(' ').pop();
     if (!lastName) return authors;
     
-    // Escape regex special characters
+    // Find only the segment (between separators) that contains the profile author
     const escapedLastName = lastName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const parts = authors.split(new RegExp(`(\\b.*?${escapedLastName}\\b)`, 'gi'));
+    const regex = new RegExp(`([^,;\\n]*?\\b${escapedLastName}\\b[^,;\\n]*)`, 'i');
+    const match = authors.match(regex);
+    
+    if (!match) return authors;
+    
+    const index = match.index;
+    const length = match[0].length;
     
     return (
       <span>
-        {parts.map((part, i) => {
-          if (part.toLowerCase().includes(lastName.toLowerCase())) {
-            return <strong key={i} className="text-primary-700 font-bold border-b-2 border-primary-200">{part}</strong>;
-          }
-          return part;
-        })}
+        {authors.substring(0, index)}
+        <strong className="text-primary-700 font-bold border-b-2 border-primary-200">
+          {authors.substring(index, index + length)}
+        </strong>
+        {authors.substring(index + length)}
       </span>
     );
   };
@@ -246,11 +287,10 @@ const App = () => {
       {publications.length > 0 && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Summary Stats */}
-          <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <StatCard label="Total Papers" value={stats.total} icon={<FileText className="text-blue-500" />} />
             <StatCard label="Lead Author" value={stats.lead} icon={<Check className="text-green-500" />} />
-            <StatCard label="Other Author" value={stats.other} icon={<User className="text-purple-500" />} />
-            <StatCard label="Unpublished" value={stats.unpublished} icon={<AlertCircle className="text-amber-500" />} />
+            <StatCard label="Preprint" value={stats.unpublished} icon={<AlertCircle className="text-amber-500" />} />
           </section>
 
           {/* Actions */}
@@ -286,8 +326,7 @@ const App = () => {
                   <th>DOI</th>
                   <th className="text-center">Year</th>
                   <th className="text-center">Citations</th>
-                  <th className="text-center">First Aut.</th>
-                  <th className="text-center">Other Aut.</th>
+                  <th className="text-center">Lead Author</th>
                   <th className="text-center">Preprint</th>
                   <th></th>
                 </tr>
@@ -307,14 +346,16 @@ const App = () => {
                         <input 
                           type="text" 
                           placeholder="DOI..." 
-                          className="bg-slate-100/50 rounded px-2 py-1 text-[10px] focus:ring-1 focus:ring-primary-400 w-24 outline-none"
+                          className={`bg-slate-100/50 rounded px-2 py-1 text-[10px] focus:ring-1 focus:ring-primary-400 w-24 outline-none ${enrichingIds.has(pub.id) ? 'animate-pulse' : ''}`}
                           value={pub.doi}
                           onChange={(e) => {
                             const val = e.target.value;
                             setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, doi: val } : p));
                           }}
                         />
-                        {!pub.doi && (
+                        {enrichingIds.has(pub.id) ? (
+                          <Loader2 className="w-3 h-3 animate-spin text-primary-500" />
+                        ) : !pub.doi && (
                           <button 
                             onClick={() => fetchDOI(pub.id, pub.title, pub.venue)}
                             className="p-1 text-primary-500 hover:text-primary-700 transition-colors"
@@ -328,15 +369,9 @@ const App = () => {
                     <td className="text-center text-xs font-semibold">{pub.year}</td>
                     <td className="text-center font-mono text-xs">{pub.citations}</td>
                     <td className="text-center">
-                      <Radio 
+                      <Checkbox 
                         checked={pub.isLead} 
-                        onChange={() => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, isLead: true, isOther: false } : p))} 
-                      />
-                    </td>
-                    <td className="text-center">
-                      <Radio 
-                        checked={pub.isOther} 
-                        onChange={() => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, isLead: false, isOther: true } : p))} 
+                        onChange={() => toggleCheckbox(pub.id, 'isLead')} 
                       />
                     </td>
                     <td className="text-center">
@@ -470,14 +505,29 @@ const StatCard = ({ label, value, icon }) => (
 
 const Radio = ({ checked, onChange }) => (
   <button
+    type="button"
     onClick={onChange}
     className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
       checked 
-        ? 'bg-primary-600 border-primary-600 text-white shadow-inner shadow-primary-800' 
+        ? 'bg-primary-600 border-primary-600 text-white' 
         : 'bg-white border-slate-300 hover:border-primary-400'
     }`}
   >
     {checked && <div className="w-2 h-2 rounded-full bg-white" />}
+  </button>
+);
+
+const Checkbox = ({ checked, onChange }) => (
+  <button
+    type="button"
+    onClick={onChange}
+    className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+      checked 
+        ? 'bg-primary-600 border-primary-600 text-white' 
+        : 'bg-white border-slate-300 hover:border-primary-400'
+    }`}
+  >
+    {checked && <Check className="w-3 h-3" />}
   </button>
 );
 
