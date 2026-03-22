@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "../../../GoogleDrive-roy@mail.tau.ac.il/My Drive/movie_home"
+		},
+		{
+			"path": "../../to_edit"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"CodeGPT.apiKey": "CodeGPT Plus Beta"
+	}
+}

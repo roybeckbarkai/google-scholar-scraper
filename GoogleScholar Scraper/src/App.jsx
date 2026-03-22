@@ -1,0 +1,392 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, Plus, Download, Trash2, Check, AlertCircle, Loader2, User, BookOpen, FileText } from 'lucide-react';
+
+const App = () => {
+  const [url, setUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [profileName, setProfileName] = useState('');
+  const [publications, setPublications] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  
+  // New entry state
+  const [newEntry, setNewEntry] = useState({
+    title: '',
+    authors: '',
+    venue: '',
+    year: new Date().getFullYear().toString(),
+    citations: '0',
+    link: '',
+    doi: ''
+  });
+
+  const handleScrape = async (e) => {
+    e.preventDefault();
+    if (!url) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      
+      setProfileName(data.profileName);
+      
+      // Auto-populate checkboxes based on profile name
+      const processed = data.publications.map(pub => {
+        const isLead = isFirstAuthor(pub.authors, data.profileName);
+        const isOther = isAuthor(pub.authors, data.profileName) && !isLead;
+        const isPreprint = isUnpublished(pub.venue);
+        
+        return { ...pub, isLead, isOther, isPreprint };
+      });
+      
+      setPublications(processed);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isAuthor = (authorList, profile) => {
+    if (!profile) return false;
+    const normalizedProfile = profile.toLowerCase().trim();
+    return authorList.toLowerCase().includes(normalizedProfile);
+  };
+
+  const isFirstAuthor = (authorList, profile) => {
+    if (!profile) return false;
+    const firstAuthor = authorList.split(',')[0].toLowerCase().trim();
+    const normalizedProfile = profile.toLowerCase().trim();
+    // Check if profile name is part of the first author string
+    return firstAuthor.includes(normalizedProfile) || normalizedProfile.includes(firstAuthor);
+  };
+
+  const isUnpublished = (venue) => {
+    const v = venue.toLowerCase();
+    return v.includes('arxiv') || v.includes('preprint') || v.includes('biorxiv') || v.includes('unpublished') || venue.trim() === '';
+  };
+
+  const toggleCheckbox = (id, field) => {
+    setPublications(prev => prev.map(pub => 
+      pub.id === id ? { ...pub, [field]: !pub[field] } : pub
+    ));
+  };
+
+  const deletePublication = (id) => {
+    setPublications(prev => prev.filter(pub => pub.id !== id));
+  };
+
+  const handleAddEntry = (e) => {
+    e.preventDefault();
+    const id = `manual-${Date.now()}`;
+    const entry = {
+      ...newEntry,
+      id,
+      isLead: isFirstAuthor(newEntry.authors, profileName),
+      isOther: isAuthor(newEntry.authors, profileName) && !isFirstAuthor(newEntry.authors, profileName),
+      isPreprint: isUnpublished(newEntry.venue)
+    };
+    setPublications([entry, ...publications]);
+    setShowAddModal(false);
+    setNewEntry({ title: '', authors: '', venue: '', year: new Date().getFullYear().toString(), citations: '0', link: '', doi: '' });
+  };
+
+  const stats = useMemo(() => {
+    return {
+      total: publications.length,
+      lead: publications.filter(p => p.isLead).length,
+      other: publications.filter(p => p.isOther).length,
+      unpublished: publications.filter(p => p.isPreprint).length
+    };
+  }, [publications]);
+
+  const renderAuthor = (authors, profile) => {
+    if (!profile) return authors;
+    const parts = authors.split(new RegExp(`(${profile})`, 'gi'));
+    return (
+      <span>
+        {parts.map((part, i) => 
+          part.toLowerCase() === profile.toLowerCase() 
+            ? <strong key={i} className="text-primary-700 font-bold">{part}</strong> 
+            : part
+        )}
+      </span>
+    );
+  };
+
+  const handleExport = () => {
+    window.print();
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
+      {/* Header */}
+      <header className="mb-10 text-center">
+        <h1 className="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">
+          Publication Scraper
+        </h1>
+        <p className="text-slate-500 text-lg">
+          Extract and organize your Google Scholar publications with ease.
+        </p>
+      </header>
+
+      {/* Scraper Input */}
+      <section className="glass-card p-6 mb-8 max-w-3xl mx-auto">
+        <form onSubmit={handleScrape} className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <input
+              type="url"
+              placeholder="Paste Google Scholar Profile URL..."
+              className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn-primary flex items-center justify-center gap-2 px-8"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <BookOpen className="w-5 h-5" />}
+            {loading ? 'Scraping...' : 'Fetch List'}
+          </button>
+        </form>
+        {error && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-100 text-red-600 rounded-lg flex items-center gap-2 text-sm">
+            <AlertCircle className="w-4 h-4" />
+            {error}
+          </div>
+        )}
+      </section>
+
+      {publications.length > 0 && (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Summary Stats */}
+          <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <StatCard label="Total Papers" value={stats.total} icon={<FileText className="text-blue-500" />} />
+            <StatCard label="Lead Author" value={stats.lead} icon={<Check className="text-green-500" />} />
+            <StatCard label="Other Author" value={stats.other} icon={<User className="text-purple-500" />} />
+            <StatCard label="Unpublished" value={stats.unpublished} icon={<AlertCircle className="text-amber-500" />} />
+          </section>
+
+          {/* Actions */}
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-slate-800">
+              {profileName ? `${profileName}'s Publications` : 'Publications'}
+            </h2>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Add Item
+              </button>
+              <button 
+                onClick={handleExport}
+                className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                <Download className="w-4 h-4" /> Export
+              </button>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="table-container mb-12">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Authors</th>
+                  <th>Journal / Venue</th>
+                  <th>DOI</th>
+                  <th className="text-center">Year</th>
+                  <th className="text-center">Citations</th>
+                  <th className="text-center">Lead</th>
+                  <th className="text-center">Other</th>
+                  <th className="text-center">Preprint</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {publications.map((pub) => (
+                  <tr key={pub.id}>
+                    <td className="max-w-xs">
+                      <a href={pub.link} target="_blank" rel="noopener noreferrer" className="font-medium text-slate-900 hover:text-primary-600 transition-colors">
+                        {pub.title}
+                      </a>
+                    </td>
+                    <td className="max-w-xs">{renderAuthor(pub.authors, profileName)}</td>
+                    <td>{pub.venue}</td>
+                    <td>
+                      <input 
+                        type="text" 
+                        placeholder="DOI..." 
+                        className="bg-transparent border-none p-0 text-xs focus:ring-0 w-24"
+                        value={pub.doi}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, doi: val } : p));
+                        }}
+                      />
+                    </td>
+                    <td className="text-center">{pub.year}</td>
+                    <td className="text-center font-mono text-xs">{pub.citations}</td>
+                    <td className="text-center">
+                      <Checkbox checked={pub.isLead} onChange={() => toggleCheckbox(pub.id, 'isLead')} />
+                    </td>
+                    <td className="text-center">
+                      <Checkbox checked={pub.isOther} onChange={() => toggleCheckbox(pub.id, 'isOther')} />
+                    </td>
+                    <td className="text-center">
+                      <Checkbox checked={pub.isPreprint} onChange={() => toggleCheckbox(pub.id, 'isPreprint')} />
+                    </td>
+                    <td className="text-right">
+                      <button 
+                        onClick={() => deletePublication(pub.id)}
+                        className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Add Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold mb-4">Add Manual Publication</h3>
+            <form onSubmit={handleAddEntry} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Title</label>
+                <input 
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500"
+                  value={newEntry.title}
+                  onChange={e => setNewEntry({...newEntry, title: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Authors</label>
+                  <input 
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Author 1, Author 2..."
+                    value={newEntry.authors}
+                    onChange={e => setNewEntry({...newEntry, authors: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Journal/Venue</label>
+                  <input 
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500"
+                    value={newEntry.venue}
+                    onChange={e => setNewEntry({...newEntry, venue: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Year</label>
+                  <input 
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500"
+                    value={newEntry.year}
+                    onChange={e => setNewEntry({...newEntry, year: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Citations</label>
+                  <input 
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500"
+                    value={newEntry.citations}
+                    onChange={e => setNewEntry({...newEntry, citations: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">DOI</label>
+                  <input 
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500"
+                    value={newEntry.doi}
+                    onChange={e => setNewEntry({...newEntry, doi: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button 
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="btn-primary"
+                >
+                  Add Publication
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Print styles */}
+      <style>{`
+        @media print {
+          .glass-card, button, .trash-col, header p, .flex.gap-3 { display: none !important; }
+          .table-container { box-shadow: none; border: none; }
+          table { width: 100%; border-collapse: collapse; }
+          th { background: #f8fafc !important; color: #000 !important; }
+          td, th { border: 1px solid #e2e8f0; font-size: 10pt; }
+          body { background: white; padding: 0; }
+          .max-w-7xl { max-width: 100%; width: 100%; padding: 0; }
+          h2 { margin-bottom: 20px; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+const StatCard = ({ label, value, icon }) => (
+  <div className="glass-card p-4 flex items-center justify-between">
+    <div>
+      <p className="text-xs font-semibold text-slate-500 uppercase mb-1">{label}</p>
+      <p className="text-2xl font-bold text-slate-900">{value}</p>
+    </div>
+    <div className="p-3 bg-slate-50 rounded-xl">
+      {icon}
+    </div>
+  </div>
+);
+
+const Checkbox = ({ checked, onChange }) => (
+  <button
+    onClick={onChange}
+    className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all ${
+      checked 
+        ? 'bg-primary-600 border-primary-600 text-white' 
+        : 'bg-white border-slate-300 hover:border-primary-400'
+    }`}
+  >
+    {checked && <Check className="w-4 h-4 stroke-[3]" />}
+  </button>
+);
+
+export default App;
