@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Plus, Download, Trash2, Check, AlertCircle, Loader2, User, BookOpen, FileText } from 'lucide-react';
+import { Search, Plus, Download, Trash2, Check, AlertCircle, Loader2, User, BookOpen, FileText, Calendar, FileJson, ChevronRight } from 'lucide-react';
 
 const App = () => {
   const [url, setUrl] = useState('');
@@ -8,6 +8,10 @@ const App = () => {
   const [profileName, setProfileName] = useState('');
   const [publications, setPublications] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showLoadModal, setShowLoadModal] = useState(false);
+  const [saveFilename, setSaveFilename] = useState('');
+  const [availableFiles, setAvailableFiles] = useState([]);
   const [enrichingIds, setEnrichingIds] = useState(new Set());
   
   // New entry state
@@ -64,17 +68,32 @@ const App = () => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveInit = () => {
+    // Default filename based on profile name and date
+    const date = new Date().toISOString().split('T')[0];
+    const defaultName = profileName 
+      ? `${profileName.replace(/\s+/g, '_')}_${date}.json` 
+      : `publications_${date}.json`;
+    setSaveFilename(defaultName);
+    setShowSaveModal(true);
+  };
+
+  const performSave = async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileName, publications })
+        body: JSON.stringify({ 
+          profileName, 
+          publications, 
+          filename: saveFilename 
+        })
       });
       const data = await response.json();
       if (data.error) throw new Error(data.error);
-      alert('Dataset saved successfully!');
+      alert(`Success: Dataset saved as "${data.filename}"`);
+      setShowSaveModal(false);
     } catch (err) {
       setError('Save failed: ' + err.message);
     } finally {
@@ -82,14 +101,30 @@ const App = () => {
     }
   };
 
-  const handleLoad = async () => {
+  const openLoadBrowser = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/load');
+      const response = await fetch('/api/files');
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      setAvailableFiles(data.files || []);
+      setShowLoadModal(true);
+    } catch (err) {
+      setError('Failed to list files: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const performLoad = async (filename) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/load?filename=${encodeURIComponent(filename)}`);
       const data = await response.json();
       if (data.error) throw new Error(data.error);
       setProfileName(data.profileName);
       setPublications(data.publications);
+      setShowLoadModal(false);
     } catch (err) {
       setError('Load failed: ' + err.message);
     } finally {
@@ -263,10 +298,10 @@ const App = () => {
         
         <div className="flex justify-center gap-4 mt-6 pt-6 border-t border-slate-100">
           <button 
-            onClick={handleLoad}
+            onClick={openLoadBrowser}
             className="flex items-center gap-2 text-slate-600 hover:text-primary-600 text-sm font-medium transition-colors"
           >
-            <Plus className="w-4 h-4 rotate-45" /> Load Saved Dataset
+            <BookOpen className="w-4 h-4" /> Load Dataset
           </button>
           <button 
             onClick={() => setShowAddModal(true)}
@@ -470,6 +505,103 @@ const App = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Save Modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-primary-50 rounded-lg text-primary-600">
+                <FileJson className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold">Save Dataset As</h3>
+            </div>
+            <p className="text-slate-500 text-sm mb-6">Enter a filename to save your current publications list.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Filename</label>
+                <div className="relative">
+                  <input 
+                    className="w-full border border-slate-200 rounded-lg pl-3 pr-12 py-3 outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                    value={saveFilename}
+                    onChange={e => setSaveFilename(e.target.value)}
+                    placeholder="my_dataset.json"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono">.json</div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button 
+                  onClick={() => setShowSaveModal(false)}
+                  className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={performSave}
+                  className="btn-primary px-8"
+                >
+                  Save Dataset
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Load Modal */}
+      {showLoadModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-primary-50 rounded-lg text-primary-600">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold">Load Dataset</h3>
+            </div>
+            
+            <div className="max-h-80 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+              {availableFiles.length === 0 ? (
+                <div className="text-center py-12 text-slate-400">
+                  <FileJson className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>No saved datasets found.</p>
+                </div>
+              ) : (
+                availableFiles.map((file) => (
+                  <button
+                    key={file.name}
+                    onClick={() => performLoad(file.name)}
+                    className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-primary-50 border border-slate-100 hover:border-primary-200 rounded-xl transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-lg shadow-sm group-hover:text-primary-600">
+                        <FileJson className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-semibold text-slate-800 group-hover:text-primary-700">{file.name}</div>
+                        <div className="text-xs text-slate-400 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(file.modified).toLocaleDateString()} at {new Date(file.modified).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-primary-400" />
+                  </button>
+                ))
+              )}
+            </div>
+            
+            <div className="flex justify-end mt-6">
+              <button 
+                onClick={() => setShowLoadModal(false)}
+                className="px-6 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
