@@ -738,8 +738,20 @@ const App = () => {
         );
       })()}
 
+      <div className="mt-12 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+        <p>
+          Disclaimer: scraping errors may happen, and it is the user&apos;s responsibility to validate the content before using or sharing it.
+        </p>
+        <p className="mt-2">
+          Comments, suggestions, and remarks on how to improve the tool can be sent to{' '}
+          <a href="mailto:roy@tauex.tau.ac.il" className="font-medium underline underline-offset-2">
+            roy@tauex.tau.ac.il
+          </a>.
+        </p>
+      </div>
+
       {/* Copyright Footer */}
-      <footer className="mt-12 pt-6 border-t border-slate-100 text-center text-slate-400 text-sm">
+      <footer className="mt-6 pt-6 border-t border-slate-100 text-center text-slate-400 text-sm">
         &copy; Roy Beck, Tel Aviv University
       </footer>
 

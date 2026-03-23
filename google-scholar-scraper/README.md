@@ -4,6 +4,12 @@ A small full-stack app for collecting publications from a Google Scholar profile
 
 The frontend is a React + Vite app. In production, the backend runs as Vercel serverless functions under `api/`. The repository also includes an older Express server in `server.js`, but the deployed app uses the Vercel API routes.
 
+## Disclaimer
+
+Scraping errors may happen, and it is the user's responsibility to validate the content before using or sharing it.
+
+Comments, suggestions, and remarks on how to improve the tool can be sent to [roy@tauex.tau.ac.il](mailto:roy@tauex.tau.ac.il).
+
 ## What it does
 
 - Scrapes a public Google Scholar profile from a pasted profile URL
