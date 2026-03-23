@@ -8,11 +8,8 @@ const App = () => {
   const [profileName, setProfileName] = useState('');
   const [publications, setPublications] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [showLoadModal, setShowLoadModal] = useState(false);
-  const [saveFilename, setSaveFilename] = useState('');
-  const [availableFiles, setAvailableFiles] = useState([]);
   const [enrichingIds, setEnrichingIds] = useState(new Set());
+  const fileInputRef = React.useRef(null);
   
   // New entry state
   const [newEntry, setNewEntry] = useState({
@@ -68,69 +65,46 @@ const App = () => {
     }
   };
 
-  const handleSaveInit = () => {
-    // Default filename based on profile name and date
+  // Save: trigger browser file download
+  const handleSave = () => {
     const date = new Date().toISOString().split('T')[0];
-    const defaultName = profileName 
-      ? `${profileName.replace(/\s+/g, '_')}_${date}.json` 
+    const filename = profileName
+      ? `${String(profileName).replace(/\s+/g, '_')}_${date}.json`
       : `publications_${date}.json`;
-    setSaveFilename(defaultName);
-    setShowSaveModal(true);
+    const data = { profileName, publications, lastUpdated: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const performSave = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          profileName, 
-          publications, 
-          filename: saveFilename 
-        })
-      });
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
-      alert(`Success: Dataset saved as "${data.filename}"`);
-      setShowSaveModal(false);
-    } catch (err) {
-      setError('Save failed: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
+  // Load: open file picker
+  const handleLoad = () => {
+    fileInputRef.current?.click();
   };
 
-  const openLoadBrowser = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/files');
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
-      setAvailableFiles(data.files || []);
-      setShowLoadModal(true);
-    } catch (err) {
-      setError('Failed to list files: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
+  // Handle file selected in picker
+  const handleFileLoad = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        setProfileName(data.profileName || '');
+        setPublications(Array.isArray(data.publications) ? data.publications : []);
+      } catch {
+        setError('Failed to parse file. Make sure it is a valid dataset JSON.');
+      }
+    };
+    reader.readAsText(file);
+    // Reset so the same file can be re-loaded
+    e.target.value = '';
   };
 
-  const performLoad = async (filename) => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/load?filename=${encodeURIComponent(filename)}`);
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
-      setProfileName(data.profileName);
-      setPublications(data.publications);
-      setShowLoadModal(false);
-    } catch (err) {
-      setError('Load failed: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const autoEnrich = async (pubs) => {
     for (const pub of pubs) {
@@ -178,7 +152,8 @@ const App = () => {
 
   const isAuthor = (authorList, profile) => {
     if (!profile || !authorList) return false;
-    const lastName = profile.split(' ').pop().toLowerCase();
+    const profileStr = String(profile);
+    const lastName = profileStr.includes(' ') ? profileStr.split(' ').pop().toLowerCase() : profileStr.toLowerCase();
     return String(authorList).toLowerCase().includes(lastName);
   };
 
@@ -187,7 +162,8 @@ const App = () => {
     const authors = String(authorList).split(/[,;]/);
     if (authors.length === 0) return false;
     const firstAuthor = authors[0].toLowerCase().trim();
-    const lastName = profile.split(' ').pop().toLowerCase();
+    const profileStr = String(profile);
+    const lastName = profileStr.includes(' ') ? profileStr.split(' ').pop().toLowerCase() : profileStr.toLowerCase();
     return firstAuthor.includes(lastName);
   };
 
@@ -232,7 +208,8 @@ const App = () => {
 
   const renderAuthor = (authors, profile) => {
     if (!profile || !authors) return authors;
-    const lastName = profile.split(' ').pop();
+    const profileStr = String(profile);
+    const lastName = profileStr.includes(' ') ? profileStr.split(' ').pop() : profileStr;
     if (!lastName) return authors;
     
     // Find only the segment (between separators) that contains the profile author
@@ -258,6 +235,122 @@ const App = () => {
 
   const handleExport = () => {
     window.print();
+  };
+
+  // Title-case a string
+  const toTitleCase = (str) => {
+    if (!str) return str;
+    return String(str).replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  };
+
+  // Format authors for print: show all unless >10 → first + et al.
+  const formatAuthorsForPrint = (authors) => {
+    if (!authors) return '';
+    const parts = String(authors).split(/[,;]/).map(s => s.trim()).filter(Boolean);
+    // Heuristic: if we have >10 "parts" it means >10 authors
+    // Google Scholar shows: "A Beck, B Doe, ... " so parts may be first/last names together
+    // Try splitting by ", " first to get full-name items
+    const byComma = String(authors).split(',').map(s => s.trim()).filter(Boolean);
+    if (byComma.length > 10) {
+      return `${byComma[0]} et al.`;
+    }
+    return authors;
+  };
+
+  // Sanitize a string for LaTeX
+  const latexEscape = (str) => {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '\\&')
+      .replace(/%/g, '\\%')
+      .replace(/\$/g, '\\$')
+      .replace(/#/g, '\\#')
+      .replace(/_/g, '\\_')
+      .replace(/\{/g, '\\{')
+      .replace(/\}/g, '\\}')
+      .replace(/~/g, '\\textasciitilde{}')
+      .replace(/\^/g, '\\textasciicircum{}');
+  };
+
+  // Sorted pub groups for print & export
+  const sortByYear = (pubs) => [...pubs].sort((a, b) => parseInt(a.year || 0) - parseInt(b.year || 0));
+  const leadPubs = sortByYear(publications.filter(p => p.isLead && !p.isPreprint));
+  const contribPubs = sortByYear(publications.filter(p => !p.isLead && !p.isPreprint));
+  const preprintPubs = sortByYear(publications.filter(p => p.isPreprint));
+
+  const handleExportLatex = () => {
+    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const lines = [
+      '\\documentclass[12pt]{article}',
+      '\\usepackage[utf8]{inputenc}',
+      '\\usepackage{hyperref}',
+      '\\usepackage{enumitem}',
+      '\\begin{document}',
+      '',
+      `\\begin{center}{\\Large \\textbf{${latexEscape(profileName)} --- Publication List}}\\\\[4pt]`,
+      `{\\small Updated to: ${today}}\\\\[2pt]`,
+      `Total: ${stats.total} \\quad Lead Author: ${stats.lead} \\quad Preprints: ${stats.unpublished}`,
+      '\\end{center}',
+      '\\vspace{1em}',
+      '',
+    ];
+
+    let counter = 1;
+    const section = (title, pubs) => {
+      if (!pubs.length) return;
+      lines.push(`\\section*{${latexEscape(title)} (${pubs.length})}`);
+      lines.push('\\begin{enumerate}[leftmargin=*, label=\\arabic*.]');
+      // We set the start counter
+      lines.push(`\\setcounter{enumi}{${counter - 1}}`);
+      pubs.forEach(pub => {
+        const url = pub.doi ? `https://doi.org/${pub.doi}` : (pub.link || '');
+        const doi = pub.doi ? ` DOI: \\href{${url}}{${latexEscape(pub.doi)}}` : (pub.link ? ` \\href{${latexEscape(pub.link)}}{[link]}` : '');
+        lines.push(`  \\item ${latexEscape(formatAuthorsForPrint(pub.authors))} (${pub.year}). \\textit{${latexEscape(toTitleCase(pub.title))}}. ${latexEscape(pub.venue)}.${doi}`);
+        counter++;
+      });
+      lines.push('\\end{enumerate}');
+      lines.push('');
+    };
+
+    section('Peer-Reviewed Lead Author', leadPubs);
+    section('Peer-Reviewed Contributing Author', contribPubs);
+    section('Preprints', preprintPubs);
+    lines.push('\\end{document}');
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${String(profileName || 'publications').replace(/\s+/g, '_')}_publications.tex`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const handleExportBib = () => {
+    const allPubs = [...leadPubs, ...contribPubs, ...preprintPubs];
+    const lines = [];
+    allPubs.forEach((pub, i) => {
+      // Construct a citekey from first author lastname + year
+      const firstAuthor = String(pub.authors || '').split(/[,;]/)[0].trim().replace(/\s+/g, '');
+      const citekey = `${firstAuthor}${pub.year || 'XXXX'}${i}`;
+      const isPreprint = pub.isPreprint;
+      const entryType = isPreprint ? 'misc' : 'article';
+      lines.push(`@${entryType}{${citekey},`);
+      lines.push(`  title     = {${String(pub.title || '').replace(/{/g, '\\{').replace(/}/g, '\\}')}},`);
+      lines.push(`  author    = {${String(pub.authors || '')}},`);
+      if (!isPreprint) lines.push(`  journal   = {${String(pub.venue || '')}},`);
+      if (isPreprint) lines.push(`  note      = {${String(pub.venue || 'Preprint')}},`);
+      lines.push(`  year      = {${pub.year || ''}},`);
+      if (pub.doi) lines.push(`  doi       = {${pub.doi}},`);
+      if (pub.link) lines.push(`  url       = {${pub.link}},`);
+      lines.push('}');
+      lines.push('');
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${String(profileName || 'publications').replace(/\s+/g, '_')}.bib`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   };
 
   return (
@@ -296,9 +389,18 @@ const App = () => {
           </button>
         </form>
         
+        {/* Hidden file input for loading */}
+        <input
+          type="file"
+          accept=".json"
+          ref={fileInputRef}
+          onChange={handleFileLoad}
+          className="hidden"
+        />
+
         <div className="flex justify-center gap-4 mt-6 pt-6 border-t border-slate-100">
           <button 
-            onClick={openLoadBrowser}
+            onClick={handleLoad}
             className="flex items-center gap-2 text-slate-600 hover:text-primary-600 text-sm font-medium transition-colors"
           >
             <BookOpen className="w-4 h-4" /> Load Dataset
@@ -337,7 +439,7 @@ const App = () => {
               <button 
                 onClick={handleSave}
                 className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                title="Save this dataset locally"
+                title="Download dataset as JSON"
               >
                 <Download className="w-4 h-4" /> Save
               </button>
@@ -346,6 +448,18 @@ const App = () => {
                 className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
                 <Download className="w-4 h-4" /> Print
+              </button>
+              <button 
+                onClick={handleExportLatex}
+                className="flex items-center gap-2 bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                <FileText className="w-4 h-4" /> Export LaTeX
+              </button>
+              <button 
+                onClick={handleExportBib}
+                className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                <FileJson className="w-4 h-4" /> Export .bib
               </button>
             </div>
           </div>
@@ -509,114 +623,76 @@ const App = () => {
         </div>
       )}
 
-      {/* Save Modal */}
-      {showSaveModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-primary-50 rounded-lg text-primary-600">
-                <FileJson className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold">Save Dataset As</h3>
-            </div>
-            <p className="text-slate-500 text-sm mb-6">Enter a filename to save your current publications list.</p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Filename</label>
-                <div className="relative">
-                  <input 
-                    className="w-full border border-slate-200 rounded-lg pl-3 pr-12 py-3 outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
-                    value={saveFilename}
-                    onChange={e => setSaveFilename(e.target.value)}
-                    placeholder="my_dataset.json"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono">.json</div>
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 pt-4">
-                <button 
-                  onClick={() => setShowSaveModal(false)}
-                  className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={performSave}
-                  className="btn-primary px-8"
-                >
-                  Save Dataset
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Print-only publication list (hidden on screen, shown when printing) */}
+      {publications.length > 0 && (() => {
+        // Build numbered items across sections (oldest first within each section)
+        const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        let counter = 1;
 
-      {/* Load Modal */}
-      {showLoadModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-primary-50 rounded-lg text-primary-600">
-                <BookOpen className="w-6 h-6" />
+        const PrintSection = ({ title, pubs }) => {
+          if (!pubs.length) return null;
+          const startNum = counter;
+          counter += pubs.length;
+          return (
+            <div className="print-section">
+              <h2>{title} ({pubs.length})</h2>
+              <ol start={startNum}>
+                {pubs.map((pub) => (
+                  <li key={pub.id}>
+                    {formatAuthorsForPrint(pub.authors)} ({pub.year}). {toTitleCase(pub.title)}.{' '}
+                    <em>{pub.venue}</em>
+                    {pub.doi ? `. DOI: ${pub.doi}` : pub.link ? `. ${pub.link}` : ''}.
+                  </li>
+                ))}
+              </ol>
+            </div>
+          );
+        };
+
+        return (
+          <div className="print-only">
+            <div className="print-header">
+              <h1>{profileName ? `${profileName} — Publication List` : 'Publication List'}</h1>
+              <div className="print-updated">Updated to: {today}</div>
+              <div className="print-stats">
+                Total: {stats.total} &nbsp;|&nbsp; Lead Author: {stats.lead} &nbsp;|&nbsp; Preprints: {stats.unpublished}
               </div>
-              <h3 className="text-xl font-bold">Load Dataset</h3>
             </div>
-            
-            <div className="max-h-80 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-              {availableFiles.length === 0 ? (
-                <div className="text-center py-12 text-slate-400">
-                  <FileJson className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p>No saved datasets found.</p>
-                </div>
-              ) : (
-                availableFiles.map((file) => (
-                  <button
-                    key={file.name}
-                    onClick={() => performLoad(file.name)}
-                    className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-primary-50 border border-slate-100 hover:border-primary-200 rounded-xl transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-lg shadow-sm group-hover:text-primary-600">
-                        <FileJson className="w-5 h-5" />
-                      </div>
-                      <div className="text-left">
-                        <div className="font-semibold text-slate-800 group-hover:text-primary-700">{file.name}</div>
-                        <div className="text-xs text-slate-400 flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(file.modified).toLocaleDateString()} at {new Date(file.modified).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-primary-400" />
-                  </button>
-                ))
-              )}
-            </div>
-            
-            <div className="flex justify-end mt-6">
-              <button 
-                onClick={() => setShowLoadModal(false)}
-                className="px-6 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors"
-              >
-                Close
-              </button>
-            </div>
+            <PrintSection title="Peer-Reviewed Lead Author" pubs={leadPubs} />
+            <PrintSection title="Peer-Reviewed Contributing Author" pubs={contribPubs} />
+            <PrintSection title="Preprints" pubs={preprintPubs} />
           </div>
-        </div>
-      )}
+        );
+      })()}
+
+      {/* Copyright Footer */}
+      <footer className="mt-12 pt-6 border-t border-slate-100 text-center text-slate-400 text-sm">
+        &copy; Roy Beck, Tel Aviv University
+      </footer>
 
       {/* Print styles */}
       <style>{`
+        .print-only { display: none; }
         @media print {
-          .glass-card, button, .trash-col, header p, .flex.gap-3 { display: none !important; }
-          .table-container { box-shadow: none; border: none; }
-          table { width: 100%; border-collapse: collapse; }
-          th { background: #f8fafc !important; color: #000 !important; }
-          td, th { border: 1px solid #e2e8f0; font-size: 10pt; }
-          body { background: white; padding: 0; }
-          .max-w-7xl { max-width: 100%; width: 100%; padding: 0; }
-          h2 { margin-bottom: 20px; }
+          /* Hide screen-only elements */
+          .glass-card, button, input, section, .table-container,
+          header, .animate-in, footer, .print-hide { display: none !important; }
+
+          /* Show print-only elements */
+          .print-only { display: block !important; }
+
+          body { background: white; font-family: Times New Roman, serif; font-size: 12pt; color: #000; margin: 0; padding: 1.5cm; }
+          .max-w-7xl { max-width: 100%; padding: 0; }
+
+          .print-header { margin-bottom: 18px; }
+          .print-header h1 { font-size: 18pt; font-weight: bold; margin-bottom: 4px; }
+          .print-updated { font-size: 11pt; color: #333; margin-bottom: 3px; }
+          .print-stats { font-size: 11pt; color: #444; margin-bottom: 18px; }
+
+          .print-section { margin-bottom: 20px; page-break-inside: auto; }
+          .print-section h2 { font-size: 14pt; font-weight: bold; border-bottom: 1px solid #888; padding-bottom: 3px; margin-bottom: 8px; }
+          .print-section ol { padding-left: 24px; margin: 0; }
+          .print-section li { font-size: 12pt; margin-bottom: 7px; line-height: 1.5; }
         }
       `}</style>
     </div>
