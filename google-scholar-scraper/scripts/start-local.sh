@@ -8,6 +8,35 @@ export npm_config_cache="$PROJECT_ROOT/.npm-cache"
 mkdir -p "$npm_config_cache"
 cd "$PROJECT_ROOT"
 
+open_browser_when_ready() {
+  local url="http://localhost:3000"
+  local opener=""
+
+  if command -v open >/dev/null 2>&1; then
+    opener="open"
+  elif command -v xdg-open >/dev/null 2>&1; then
+    opener="xdg-open"
+  else
+    return
+  fi
+
+  (
+    for _ in $(seq 1 30); do
+      if command -v curl >/dev/null 2>&1; then
+        if curl -fsS "$url" >/dev/null 2>&1; then
+          "$opener" "$url" >/dev/null 2>&1 || true
+          exit 0
+        fi
+      else
+        sleep 5
+        "$opener" "$url" >/dev/null 2>&1 || true
+        exit 0
+      fi
+      sleep 1
+    done
+  ) &
+}
+
 echo "Google Scholar Publication Scraper"
 echo "Starting local app..."
 echo
@@ -33,4 +62,5 @@ echo "Launching the full local app..."
 echo "Keep this terminal open while you use the app."
 echo
 
+open_browser_when_ready
 npx vercel dev --local .

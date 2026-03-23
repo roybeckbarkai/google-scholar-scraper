@@ -42,6 +42,7 @@ if not exist node_modules (
 echo Launching the full local app...
 echo Keep this window open while you use the app.
 echo.
+start "" powershell -NoProfile -ExecutionPolicy Bypass -Command "for ($i=0; $i -lt 30; $i++) { try { Invoke-WebRequest -UseBasicParsing http://localhost:3000 | Out-Null; Start-Process 'http://localhost:3000'; break } catch { Start-Sleep -Seconds 1 } }"
 call npx vercel dev --local .
 
 if errorlevel 1 (
