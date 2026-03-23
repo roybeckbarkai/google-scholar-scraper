@@ -1,0 +1,11 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
+LAUNCHER="$SCRIPT_DIR/scripts/start-local.sh"
+
+/usr/bin/osascript <<APPLESCRIPT
+tell application "Terminal"
+  activate
+  do script "cd " & quoted form of "$SCRIPT_DIR" & "; chmod +x " & quoted form of "$LAUNCHER" & "; " & quoted form of "$LAUNCHER"
+end tell
+APPLESCRIPT

@@ -112,7 +112,9 @@ After downloading or cloning, open that inner `google-scholar-scraper` folder be
 3. Open the inner `google-scholar-scraper` folder
 4. Install Node.js LTS from [nodejs.org](https://nodejs.org/)
 5. Open `scripts`
-6. Double-click `start-local.command`
+6. Double-click `Start Local.app`
+
+If macOS blocks it the first time, right-click `Start Local.app`, choose `Open`, then confirm once.
 
 ### Linux quick start
 
