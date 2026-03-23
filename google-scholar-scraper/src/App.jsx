@@ -10,6 +10,8 @@ const App = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [enrichingIds, setEnrichingIds] = useState(new Set());
   const fileInputRef = React.useRef(null);
+  const isHostedApp = typeof window !== 'undefined' && !['localhost', '127.0.0.1'].includes(window.location.hostname);
+  const shouldSuggestLocalInstall = isHostedApp && error && /403|blocked|serverless|proxy/i.test(error);
   
   // New entry state
   const [newEntry, setNewEntry] = useState({
@@ -420,10 +422,31 @@ const App = () => {
           </a>
         </div>
 
+        {isHostedApp && (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Using the hosted version. If Google Scholar blocks scraping here, open{' '}
+            <a href="/install-local.html" target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-2">
+              Install Local
+            </a>{' '}
+            and run the app on your own computer.
+          </div>
+        )}
+
         {error && (
           <div className="mt-4 p-3 bg-red-50 border border-red-100 text-red-600 rounded-lg flex items-center gap-2 text-sm">
             <AlertCircle className="w-4 h-4" />
-            {error}
+            <div>
+              <div>{error}</div>
+              {shouldSuggestLocalInstall && (
+                <div className="mt-1">
+                  Try the{' '}
+                  <a href="/install-local.html" target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-2">
+                    local installation
+                  </a>{' '}
+                  if this hosted version is being blocked.
+                </div>
+              )}
+            </div>
           </div>
         )}
       </section>

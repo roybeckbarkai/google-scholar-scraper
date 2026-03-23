@@ -22,4 +22,4 @@ npm install
 echo
 echo "Installation complete."
 echo "To start the full local app, run:"
-echo "./scripts/run-local.sh"
+echo "./scripts/start-local.sh"

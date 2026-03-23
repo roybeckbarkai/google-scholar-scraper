@@ -29,4 +29,4 @@ if errorlevel 1 (
 echo.
 echo Installation complete.
 echo To start the full local app, run:
-echo scripts\run-local.bat
+echo scripts\start-local.bat

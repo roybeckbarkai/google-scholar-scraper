@@ -7,7 +7,7 @@ echo
 
 if [ ! -d node_modules ]; then
   echo "Dependencies are not installed yet."
-  echo "Run ./scripts/install-local.sh first."
+  echo "Run ./scripts/start-local.sh instead."
   exit 1
 fi
 

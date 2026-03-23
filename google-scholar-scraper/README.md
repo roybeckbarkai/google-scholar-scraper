@@ -96,42 +96,36 @@ After downloading, open a terminal inside the extracted or cloned project folder
 
 ### Windows quick start
 
-1. Install Node.js LTS from [nodejs.org](https://nodejs.org/). `npm` is included with Node.js.
-2. Open `Command Prompt` or `PowerShell`.
-3. Change into the downloaded project folder.
-4. Run:
-
-```bat
-scripts\install-local.bat
-scripts\run-local.bat
-```
-
-The second command starts the full local app with the API routes enabled.
+1. Download the project ZIP from [GitHub](https://github.com/roybeckbarkai/googlesholar-scraper/archive/refs/heads/main.zip)
+2. Extract the ZIP
+3. Install Node.js LTS from [nodejs.org](https://nodejs.org/)
+4. Open the extracted folder, then open `scripts`
+5. Double-click `start-local.bat`
 
 ### macOS quick start
 
-1. Install Node.js LTS from [nodejs.org](https://nodejs.org/).
-2. Open `Terminal`.
-3. Change into the downloaded project folder.
-4. Run:
+1. Download the project ZIP from [GitHub](https://github.com/roybeckbarkai/googlesholar-scraper/archive/refs/heads/main.zip)
+2. Extract the ZIP
+3. Install Node.js LTS from [nodejs.org](https://nodejs.org/)
+4. Open `Terminal` in the extracted project folder
+5. Run:
 
 ```bash
-chmod +x scripts/*.sh
-./scripts/install-local.sh
-./scripts/run-local.sh
+chmod +x scripts/start-local.sh
+./scripts/start-local.sh
 ```
 
 ### Linux quick start
 
-1. Install Node.js 18+ and `npm` using your package manager or from [nodejs.org](https://nodejs.org/).
-2. Open a terminal.
-3. Change into the downloaded project folder.
-4. Run:
+1. Download the project ZIP from [GitHub](https://github.com/roybeckbarkai/googlesholar-scraper/archive/refs/heads/main.zip)
+2. Extract the ZIP
+3. Install Node.js 18+ and `npm`
+4. Open a terminal in the extracted project folder
+5. Run:
 
 ```bash
-chmod +x scripts/*.sh
-./scripts/install-local.sh
-./scripts/run-local.sh
+chmod +x scripts/start-local.sh
+./scripts/start-local.sh
 ```
 
 ### Manual install on any platform
