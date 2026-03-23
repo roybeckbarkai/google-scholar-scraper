@@ -6,6 +6,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 export npm_config_cache="$PROJECT_ROOT/.npm-cache"
 
 mkdir -p "$npm_config_cache"
+cd "$PROJECT_ROOT"
 
 echo "Google Scholar Publication Scraper"
 echo "Local installation for macOS/Linux"
