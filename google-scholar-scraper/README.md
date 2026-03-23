@@ -38,6 +38,11 @@ The frontend is a React + Vite app. In production, the backend runs as Vercel se
 │   └── scrape.js         # Vercel serverless function for Google Scholar scraping
 ├── data/
 │   └── publications.json # Example dataset
+├── scripts/
+│   ├── install-local.bat # Windows installer helper
+│   ├── install-local.sh  # macOS/Linux installer helper
+│   ├── run-local.bat     # Windows local run helper
+│   └── run-local.sh      # macOS/Linux local run helper
 ├── src/
 │   ├── App.jsx           # Main UI and export logic
 │   ├── index.css         # Tailwind styles
@@ -54,14 +59,79 @@ The frontend is a React + Vite app. In production, the backend runs as Vercel se
 - Node.js 18+ recommended
 - npm 10+ recommended
 - A public Google Scholar profile URL
+- Internet access for Google Scholar and Crossref
 
-No environment variables are currently required by the app.
+No environment variables are required for local use.
 
-## Installation
+Optional for production or blocked serverless environments:
+
+- `SCHOLAR_FETCH_URL_TEMPLATE` for routing Scholar requests through a proxy when Vercel gets blocked
+
+## Why run it locally
+
+Running locally is the most user-friendly option if your deployed Vercel app is returning `403` while scraping Google Scholar.
+
+Benefits:
+
+- Google Scholar is less likely to block requests coming from your own machine than from a shared serverless datacenter IP
+- you can use the full app, including `/api/scrape` and `/api/doi`, without deploying changes first
+- debugging is easier because you can test immediately after editing code
+- local use avoids unnecessary redeploys when you only want to fetch or export data
+
+## Local installation and run
+
+This is the recommended way to use the app if scraping fails on Vercel.
+
+### Windows quick start
+
+1. Install Node.js LTS from [nodejs.org](https://nodejs.org/). `npm` is included with Node.js.
+2. Open `Command Prompt` or `PowerShell`.
+3. Change into the project folder.
+4. Run:
+
+```bat
+scripts\install-local.bat
+scripts\run-local.bat
+```
+
+The second command starts the full local app with the API routes enabled.
+
+### macOS quick start
+
+1. Install Node.js LTS from [nodejs.org](https://nodejs.org/).
+2. Open `Terminal`.
+3. Change into the project folder.
+4. Run:
+
+```bash
+chmod +x scripts/*.sh
+./scripts/install-local.sh
+./scripts/run-local.sh
+```
+
+### Linux quick start
+
+1. Install Node.js 18+ and `npm` using your package manager or from [nodejs.org](https://nodejs.org/).
+2. Open a terminal.
+3. Change into the project folder.
+4. Run:
+
+```bash
+chmod +x scripts/*.sh
+./scripts/install-local.sh
+./scripts/run-local.sh
+```
+
+### Manual install on any platform
+
+If you prefer not to use the helper scripts, use:
 
 ```bash
 npm install
+npm run run-local
 ```
+
+`npm run run-local` starts the full local app through Vercel's local runtime, which is the correct mode for scraping and DOI lookup.
 
 ## Running locally
 
@@ -69,13 +139,18 @@ There are two local development modes in this repo.
 
 ### Recommended: full app with API routes
 
-Use Vercel local development so both the frontend and `api/` functions are available.
+Use the full local runtime so both the frontend and `api/` functions are available.
 
 ```bash
-npm run vercel-dev
+npm run run-local
 ```
 
-This is the correct mode if you want scraping and DOI lookup to work locally.
+Equivalent helper scripts:
+
+- Windows: `scripts\run-local.bat`
+- macOS/Linux: `./scripts/run-local.sh`
+
+This is the correct mode if you want scraping and DOI lookup to work locally. It is also the best option when your deployed Vercel app is being blocked by Google Scholar.
 
 ### Frontend-only mode
 
@@ -345,6 +420,8 @@ Possible reasons:
 ```bash
 npm run dev         # Vite frontend only
 npm run vercel-dev  # Full local app through Vercel
+npm run run-local   # Same as above, named for end users
+npm run install-local # Install dependencies
 npm run build       # Production build
 npm run preview     # Preview production build
 npm run server      # Start legacy Express server
