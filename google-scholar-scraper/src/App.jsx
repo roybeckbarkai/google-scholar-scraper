@@ -397,7 +397,7 @@ const App = () => {
           className="hidden"
         />
 
-        <div className="flex justify-center gap-4 mt-6 pt-6 border-t border-slate-100">
+        <div className="flex flex-wrap justify-center gap-4 mt-6 pt-6 border-t border-slate-100">
           <button 
             onClick={handleLoad}
             className="flex items-center gap-2 text-slate-600 hover:text-primary-600 text-sm font-medium transition-colors"
@@ -410,6 +410,14 @@ const App = () => {
           >
             <Plus className="w-4 h-4" /> Add Manual Entry
           </button>
+          <a
+            href="/install-local.html"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 text-slate-600 hover:text-primary-600 text-sm font-medium transition-colors"
+          >
+            <Download className="w-4 h-4" /> Install Local
+          </a>
         </div>
 
         {error && (
