@@ -116,6 +116,14 @@ After downloading or cloning, open that inner `google-scholar-scraper` folder be
 
 If macOS blocks it the first time, right-click `Start Local.app`, choose `Open`, then confirm once.
 
+If that still does not work, use Terminal:
+
+```bash
+cd /path/to/google-scholar-scraper
+chmod +x scripts/start-local.sh
+./scripts/start-local.sh
+```
+
 ### Linux quick start
 
 1. Download the repository ZIP from [GitHub](https://github.com/roybeckbarkai/google-scholar-scraper/archive/refs/heads/main.zip)
@@ -126,6 +134,14 @@ If macOS blocks it the first time, right-click `Start Local.app`, choose `Open`,
 6. Double-click `start-local.desktop`
 
 Some Linux desktops may ask you to allow launching the file the first time.
+
+If that does not work, use Terminal:
+
+```bash
+cd /path/to/google-scholar-scraper
+chmod +x scripts/start-local.sh
+./scripts/start-local.sh
+```
 
 ### Manual install on any platform
 

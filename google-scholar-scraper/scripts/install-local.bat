@@ -1,6 +1,11 @@
 @echo off
 setlocal
 
+set "PROJECT_ROOT=%~dp0.."
+set "NPM_CONFIG_CACHE=%PROJECT_ROOT%\.npm-cache"
+
+if not exist "%NPM_CONFIG_CACHE%" mkdir "%NPM_CONFIG_CACHE%"
+
 echo Google Scholar Publication Scraper
 echo Local installation for Windows
 echo.

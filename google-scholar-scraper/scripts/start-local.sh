@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+export npm_config_cache="$PROJECT_ROOT/.npm-cache"
+
+mkdir -p "$npm_config_cache"
+
 echo "Google Scholar Publication Scraper"
 echo "Starting local app..."
 echo
