@@ -303,9 +303,8 @@ const App = () => {
       // We set the start counter
       lines.push(`\\setcounter{enumi}{${counter - 1}}`);
       pubs.forEach(pub => {
-        const url = pub.doi ? `https://doi.org/${pub.doi}` : (pub.link || '');
-        const doi = pub.doi ? ` DOI: \\href{${url}}{${latexEscape(pub.doi)}}` : (pub.link ? ` \\href{${latexEscape(pub.link)}}{[link]}` : '');
-        lines.push(`  \\item ${latexEscape(formatAuthorsForPrint(pub.authors))} (${pub.year}). \\textit{${latexEscape(toTitleCase(pub.title))}}. ${latexEscape(pub.venue)}.${doi}`);
+        const doiLink = pub.doi ? ` \\href{https://doi.org/${pub.doi}}{DOI: ${latexEscape(pub.doi)}}` : '';
+        lines.push(`  \\item ${latexEscape(formatAuthorsForPrint(pub.authors))} (${pub.year}). \\textit{${latexEscape(toTitleCase(pub.title))}}. ${latexEscape(toTitleCase(pub.venue))}.${doiLink}`);
         counter++;
       });
       lines.push('\\end{enumerate}');
@@ -450,6 +449,13 @@ const App = () => {
                 <Download className="w-4 h-4" /> Print
               </button>
               <button 
+                onClick={handleExport}
+                className="flex items-center gap-2 bg-sky-700 hover:bg-sky-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                title="Save as PDF using your browser's print dialog"
+              >
+                <FileText className="w-4 h-4" /> Save as PDF
+              </button>
+              <button 
                 onClick={handleExportLatex}
                 className="flex items-center gap-2 bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
@@ -484,12 +490,34 @@ const App = () => {
                 {publications.map((pub) => (
                   <tr key={pub.id} className={pub.isLead ? "bg-primary-50/30" : ""}>
                     <td className="max-w-xs">
-                      <a href={pub.link} target="_blank" rel="noopener noreferrer" className="font-medium text-slate-900 hover:text-primary-600 transition-colors">
-                        {pub.title}
-                      </a>
+                      <input
+                        type="text"
+                        className="w-full bg-transparent font-medium text-slate-900 outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5 text-sm"
+                        value={pub.title}
+                        onChange={(e) => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, title: e.target.value } : p))}
+                      />
+                      {(pub.doi || pub.link) && (
+                        <a href={pub.doi ? `https://doi.org/${pub.doi}` : pub.link} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary-500 hover:underline">
+                          {pub.doi ? `doi:${pub.doi}` : 'link'}
+                        </a>
+                      )}
                     </td>
-                    <td className="max-w-xs text-xs">{renderAuthor(pub.authors, profileName)}</td>
-                    <td className="text-xs italic">{pub.venue}</td>
+                    <td className="max-w-xs">
+                      <input
+                        type="text"
+                        className="w-full bg-transparent text-xs outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5"
+                        value={pub.authors}
+                        onChange={(e) => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, authors: e.target.value } : p))}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        className="w-full bg-transparent text-xs italic outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5"
+                        value={pub.venue}
+                        onChange={(e) => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, venue: e.target.value } : p))}
+                      />
+                    </td>
                     <td>
                       <div className="flex items-center gap-1">
                         <input 
@@ -515,8 +543,22 @@ const App = () => {
                         )}
                       </div>
                     </td>
-                    <td className="text-center text-xs font-semibold">{pub.year}</td>
-                    <td className="text-center font-mono text-xs">{pub.citations}</td>
+                    <td className="text-center">
+                      <input
+                        type="text"
+                        className="w-12 bg-transparent text-xs font-semibold text-center outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5"
+                        value={pub.year}
+                        onChange={(e) => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, year: e.target.value } : p))}
+                      />
+                    </td>
+                    <td className="text-center">
+                      <input
+                        type="text"
+                        className="w-10 bg-transparent font-mono text-xs text-center outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5"
+                        value={pub.citations}
+                        onChange={(e) => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, citations: e.target.value } : p))}
+                      />
+                    </td>
                     <td className="text-center">
                       <Checkbox 
                         checked={pub.isLead} 
@@ -640,8 +682,8 @@ const App = () => {
                 {pubs.map((pub) => (
                   <li key={pub.id}>
                     {formatAuthorsForPrint(pub.authors)} ({pub.year}). {toTitleCase(pub.title)}.{' '}
-                    <em>{pub.venue}</em>
-                    {pub.doi ? `. DOI: ${pub.doi}` : pub.link ? `. ${pub.link}` : ''}.
+                    <em>{toTitleCase(pub.venue)}</em>
+                    {pub.doi ? `. DOI: ${pub.doi}` : ''}.
                   </li>
                 ))}
               </ol>
