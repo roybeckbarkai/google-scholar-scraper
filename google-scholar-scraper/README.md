@@ -234,6 +234,7 @@ Notes:
 - method must be `POST`
 - the `user` query parameter must exist in the Scholar URL
 - failures usually come from invalid URLs, upstream blocking, or Google Scholar markup changes
+- on Vercel, Google Scholar may block the datacenter IP with `403`; if that happens, set `SCHOLAR_FETCH_URL_TEMPLATE` to a proxy endpoint template such as `https://your-provider.example/?url={url}`
 
 ### `POST /api/doi`
 
@@ -320,6 +321,16 @@ Check:
 1. the Scholar URL is a valid profile URL
 2. the profile is public
 3. Google Scholar is not throttling the request
+
+If the error includes `403` on Vercel, the most likely cause is Google Scholar blocking the Vercel egress IP rather than a parser bug. The app now supports `SCHOLAR_FETCH_URL_TEMPLATE`, which should be a full URL template containing `{url}`. The scraper replaces `{url}` with the encoded Scholar page URL before fetching.
+
+Example:
+
+```bash
+SCHOLAR_FETCH_URL_TEMPLATE="https://your-proxy.example/fetch?url={url}"
+```
+
+Add that variable in the Vercel project settings and redeploy. Without a proxy, direct Scholar scraping from serverless infrastructure is unreliable.
 
 ### DOI lookup fails
 
