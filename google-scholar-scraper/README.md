@@ -82,11 +82,23 @@ Benefits:
 
 This is the recommended way to use the app if scraping fails on Vercel.
 
+### Step 1: download the project
+
+You need a local copy of the project before you can install or run it.
+
+Options:
+
+- If the project is hosted on GitHub, open the repository page, click `Code`, then click `Download ZIP`
+- If you use Git, clone the repository with `git clone <repository-url>`
+- If someone shared the project as a ZIP file, extract it to a folder on your computer
+
+After downloading, open a terminal inside the extracted or cloned project folder.
+
 ### Windows quick start
 
 1. Install Node.js LTS from [nodejs.org](https://nodejs.org/). `npm` is included with Node.js.
 2. Open `Command Prompt` or `PowerShell`.
-3. Change into the project folder.
+3. Change into the downloaded project folder.
 4. Run:
 
 ```bat
@@ -100,7 +112,7 @@ The second command starts the full local app with the API routes enabled.
 
 1. Install Node.js LTS from [nodejs.org](https://nodejs.org/).
 2. Open `Terminal`.
-3. Change into the project folder.
+3. Change into the downloaded project folder.
 4. Run:
 
 ```bash
@@ -113,7 +125,7 @@ chmod +x scripts/*.sh
 
 1. Install Node.js 18+ and `npm` using your package manager or from [nodejs.org](https://nodejs.org/).
 2. Open a terminal.
-3. Change into the project folder.
+3. Change into the downloaded project folder.
 4. Run:
 
 ```bash
