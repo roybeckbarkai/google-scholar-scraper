@@ -92,23 +92,27 @@ Options:
 - If you use Git, clone the repository with `git clone https://github.com/roybeckbarkai/google-scholar-scraper.git`
 - If someone shared the project as a ZIP file, extract it to a folder on your computer
 
-After downloading, open a terminal inside the extracted or cloned project folder.
+This app lives inside the repository subfolder `google-scholar-scraper`.
+
+After downloading or cloning, open that inner `google-scholar-scraper` folder before running any commands.
 
 ### Windows quick start
 
-1. Download the project ZIP from [GitHub](https://github.com/roybeckbarkai/google-scholar-scraper/archive/refs/heads/main.zip)
+1. Download the repository ZIP from [GitHub](https://github.com/roybeckbarkai/google-scholar-scraper/archive/refs/heads/main.zip)
 2. Extract the ZIP
-3. Install Node.js LTS from [nodejs.org](https://nodejs.org/)
-4. Open the extracted folder, then open `scripts`
-5. Double-click `start-local.bat`
+3. Open the inner `google-scholar-scraper` folder
+4. Install Node.js LTS from [nodejs.org](https://nodejs.org/)
+5. Open `scripts`
+6. Double-click `start-local.bat`
 
 ### macOS quick start
 
-1. Download the project ZIP from [GitHub](https://github.com/roybeckbarkai/google-scholar-scraper/archive/refs/heads/main.zip)
+1. Download the repository ZIP from [GitHub](https://github.com/roybeckbarkai/google-scholar-scraper/archive/refs/heads/main.zip)
 2. Extract the ZIP
-3. Install Node.js LTS from [nodejs.org](https://nodejs.org/)
-4. Open `Terminal` in the extracted project folder
-5. Run:
+3. Open the inner `google-scholar-scraper` folder
+4. Install Node.js LTS from [nodejs.org](https://nodejs.org/)
+5. Open `Terminal` in that inner folder
+6. Run:
 
 ```bash
 chmod +x scripts/start-local.sh
@@ -117,11 +121,12 @@ chmod +x scripts/start-local.sh
 
 ### Linux quick start
 
-1. Download the project ZIP from [GitHub](https://github.com/roybeckbarkai/google-scholar-scraper/archive/refs/heads/main.zip)
+1. Download the repository ZIP from [GitHub](https://github.com/roybeckbarkai/google-scholar-scraper/archive/refs/heads/main.zip)
 2. Extract the ZIP
-3. Install Node.js 18+ and `npm`
-4. Open a terminal in the extracted project folder
-5. Run:
+3. Open the inner `google-scholar-scraper` folder
+4. Install Node.js 18+ and `npm`
+5. Open a terminal in that inner folder
+6. Run:
 
 ```bash
 chmod +x scripts/start-local.sh
