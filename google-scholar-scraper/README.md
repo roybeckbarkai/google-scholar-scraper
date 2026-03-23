@@ -456,6 +456,6 @@ npm run server      # Start legacy Express server
 
 ## License and attribution
 
-This repository currently does not define a license file.
+This repository is licensed under the MIT License. See [LICENSE](/Users/roybeck/Library/CloudStorage/Dropbox/python code/google-scholar-scraper/LICENSE).
 
 The UI footer attributes the project to Roy Beck, Tel Aviv University.
