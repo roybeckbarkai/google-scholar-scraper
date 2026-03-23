@@ -89,14 +89,14 @@ You need a local copy of the project before you can install or run it.
 Options:
 
 - If the project is hosted on GitHub, open the repository page, click `Code`, then click `Download ZIP`
-- If you use Git, clone the repository with `git clone <repository-url>`
+- If you use Git, clone the repository with `git clone https://github.com/roybeckbarkai/google-scholar-scraper.git`
 - If someone shared the project as a ZIP file, extract it to a folder on your computer
 
 After downloading, open a terminal inside the extracted or cloned project folder.
 
 ### Windows quick start
 
-1. Download the project ZIP from [GitHub](https://github.com/roybeckbarkai/googlesholar-scraper/archive/refs/heads/main.zip)
+1. Download the project ZIP from [GitHub](https://github.com/roybeckbarkai/google-scholar-scraper/archive/refs/heads/main.zip)
 2. Extract the ZIP
 3. Install Node.js LTS from [nodejs.org](https://nodejs.org/)
 4. Open the extracted folder, then open `scripts`
@@ -104,7 +104,7 @@ After downloading, open a terminal inside the extracted or cloned project folder
 
 ### macOS quick start
 
-1. Download the project ZIP from [GitHub](https://github.com/roybeckbarkai/googlesholar-scraper/archive/refs/heads/main.zip)
+1. Download the project ZIP from [GitHub](https://github.com/roybeckbarkai/google-scholar-scraper/archive/refs/heads/main.zip)
 2. Extract the ZIP
 3. Install Node.js LTS from [nodejs.org](https://nodejs.org/)
 4. Open `Terminal` in the extracted project folder
@@ -117,7 +117,7 @@ chmod +x scripts/start-local.sh
 
 ### Linux quick start
 
-1. Download the project ZIP from [GitHub](https://github.com/roybeckbarkai/googlesholar-scraper/archive/refs/heads/main.zip)
+1. Download the project ZIP from [GitHub](https://github.com/roybeckbarkai/google-scholar-scraper/archive/refs/heads/main.zip)
 2. Extract the ZIP
 3. Install Node.js 18+ and `npm`
 4. Open a terminal in the extracted project folder
