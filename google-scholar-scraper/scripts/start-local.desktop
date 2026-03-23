@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Start Google Scholar Scraper
+Comment=Install dependencies if needed and run the app locally
+Path=
+Exec=sh -c 'DIR="$(dirname "$1")"; cd "$DIR"; chmod +x ./start-local.sh; ./start-local.sh' dummy %k
+Terminal=true
+Categories=Development;Education;

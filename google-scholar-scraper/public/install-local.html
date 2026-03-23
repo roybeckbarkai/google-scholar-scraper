@@ -121,26 +121,39 @@
           <li>Double-click <code>start-local.bat</code>.</li>
         </ol>
 
-        <h2>macOS and Linux</h2>
+        <h2>macOS</h2>
         <ol>
           <li>Click <strong>Download Repository ZIP</strong>.</li>
           <li>Extract the ZIP to a folder on your computer.</li>
           <li>Open the extracted repository folder, then open the inner <code>google-scholar-scraper</code> folder.</li>
           <li>If Node.js is not installed yet, click <strong>Install Node.js</strong> and install the LTS version.</li>
-          <li>Open Terminal in that inner <code>google-scholar-scraper</code> folder.</li>
-          <li>Run this one command:</li>
+          <li>Open the <code>scripts</code> folder.</li>
+          <li>Double-click <code>start-local.command</code>.</li>
         </ol>
-        <pre>chmod +x scripts/start-local.sh
-./scripts/start-local.sh</pre>
+
+        <h2>Linux</h2>
+        <ol>
+          <li>Click <strong>Download Repository ZIP</strong>.</li>
+          <li>Extract the ZIP to a folder on your computer.</li>
+          <li>Open the extracted repository folder, then open the inner <code>google-scholar-scraper</code> folder.</li>
+          <li>If Node.js is not installed yet, click <strong>Install Node.js</strong> and install it.</li>
+          <li>Open the <code>scripts</code> folder.</li>
+          <li>Double-click <code>start-local.desktop</code>.</li>
+        </ol>
 
         <div class="note">
           The launcher installs project dependencies automatically on the first run and then starts the full local app.
-          Keep the terminal window open while you use the app.
+          Keep the opened window open while you use the app.
         </div>
 
         <div class="note">
           The hosted Vercel app cannot automatically use each visitor's own proxy settings. The scraper runs on Vercel's network,
           not on the visitor's computer, so local run is the reliable per-user fallback.
+        </div>
+
+        <div class="note">
+          On Linux, some file managers ask you to confirm or enable launching desktop files the first time. If you see that prompt,
+          choose the option that allows running <code>start-local.desktop</code>.
         </div>
       </section>
     </main>

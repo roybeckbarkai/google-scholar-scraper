@@ -111,13 +111,8 @@ After downloading or cloning, open that inner `google-scholar-scraper` folder be
 2. Extract the ZIP
 3. Open the inner `google-scholar-scraper` folder
 4. Install Node.js LTS from [nodejs.org](https://nodejs.org/)
-5. Open `Terminal` in that inner folder
-6. Run:
-
-```bash
-chmod +x scripts/start-local.sh
-./scripts/start-local.sh
-```
+5. Open `scripts`
+6. Double-click `start-local.command`
 
 ### Linux quick start
 
@@ -125,13 +120,10 @@ chmod +x scripts/start-local.sh
 2. Extract the ZIP
 3. Open the inner `google-scholar-scraper` folder
 4. Install Node.js 18+ and `npm`
-5. Open a terminal in that inner folder
-6. Run:
+5. Open `scripts`
+6. Double-click `start-local.desktop`
 
-```bash
-chmod +x scripts/start-local.sh
-./scripts/start-local.sh
-```
+Some Linux desktops may ask you to allow launching the file the first time.
 
 ### Manual install on any platform
 
