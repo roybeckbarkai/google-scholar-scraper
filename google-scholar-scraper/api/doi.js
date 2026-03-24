@@ -5,8 +5,47 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { title, venue } = req.body;
-  if (!title) return res.status(400).json({ error: 'Title is required' });
+  const { title, venue, doi } = req.body;
+
+  if (doi) {
+    try {
+      const normalizedDoi = String(doi).trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i, '');
+      const response = await axios.get(`https://api.crossref.org/works/${encodeURIComponent(normalizedDoi)}`, {
+        headers: { 'User-Agent': 'ScholarScraper/1.0 (mailto:scholar@example.com)' }
+      });
+
+      const item = response.data?.message;
+      if (!item) return res.status(404).json({ error: 'DOI metadata not found.' });
+
+      const authors = item.author
+        ? item.author
+            .map(a => [a.given, a.family].filter(Boolean).join(' ').trim())
+            .filter(Boolean)
+            .join(', ')
+        : '';
+
+      const venueName = item['container-title']?.[0] || item.publisher || '';
+      const year =
+        item.issued?.['date-parts']?.[0]?.[0] ||
+        item.published?.['date-parts']?.[0]?.[0] ||
+        item.created?.['date-parts']?.[0]?.[0] ||
+        '';
+
+      return res.json({
+        doi: item.DOI || normalizedDoi,
+        title: item.title?.[0] || '',
+        authors,
+        venue: venueName,
+        year: String(year || ''),
+        link: item.URL || `https://doi.org/${item.DOI || normalizedDoi}`
+      });
+    } catch (error) {
+      console.error('DOI metadata error:', error.message);
+      return res.status(404).json({ error: 'Could not retrieve publication details for this DOI.' });
+    }
+  }
+
+  if (!title) return res.status(400).json({ error: 'Title is required when DOI is not provided.' });
 
   try {
     const query = `${title} ${venue || ''}`;
