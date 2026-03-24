@@ -36,10 +36,15 @@ tr:hover td {
   @apply bg-slate-50/50;
 }
 
-td input[type="text"] {
+td input[type="text"],
+td textarea {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
   line-height: 1.4;
   min-height: 2.25rem;
+}
+
+td textarea {
+  field-sizing: content;
 }

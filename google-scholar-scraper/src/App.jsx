@@ -280,6 +280,15 @@ const App = () => {
     window.print();
   };
 
+  const getDynamicRows = (value, charsPerRow = 36) => {
+    if (!value) return 1;
+    const segments = String(value).split('\n');
+    const estimatedRows = segments.reduce((count, segment) => {
+      return count + Math.max(1, Math.ceil(segment.length / charsPerRow));
+    }, 0);
+    return Math.min(8, Math.max(1, estimatedRows));
+  };
+
   // Title-case a string
   const toTitleCase = (str) => {
     if (!str) return str;
@@ -566,9 +575,9 @@ const App = () => {
                 {publications.map((pub) => (
                   <tr key={pub.id} className={pub.isLead ? "bg-primary-50/30" : ""}>
                     <td className="max-w-md align-top">
-                      <input
-                        type="text"
-                        className="w-full bg-transparent font-medium text-slate-900 outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5 text-sm whitespace-normal"
+                      <textarea
+                        rows={getDynamicRows(pub.title, 42)}
+                        className="w-full bg-transparent font-medium text-slate-900 outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-1 text-sm whitespace-normal resize-none"
                         value={pub.title}
                         onChange={(e) => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, title: e.target.value } : p))}
                       />
@@ -579,17 +588,17 @@ const App = () => {
                       )}
                     </td>
                     <td className="max-w-md align-top">
-                      <input
-                        type="text"
-                        className="w-full bg-transparent text-xs outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5 whitespace-normal"
+                      <textarea
+                        rows={getDynamicRows(pub.authors, 36)}
+                        className="w-full bg-transparent text-xs outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-1 whitespace-normal resize-none"
                         value={pub.authors}
                         onChange={(e) => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, authors: e.target.value } : p))}
                       />
                     </td>
                     <td className="align-top">
-                      <input
-                        type="text"
-                        className="w-full bg-transparent text-xs italic outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5 whitespace-normal"
+                      <textarea
+                        rows={getDynamicRows(pub.venue, 30)}
+                        className="w-full bg-transparent text-xs italic outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-1 whitespace-normal resize-none"
                         value={pub.venue}
                         onChange={(e) => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, venue: e.target.value } : p))}
                       />
