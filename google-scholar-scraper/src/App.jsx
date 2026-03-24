@@ -9,6 +9,9 @@ const App = () => {
   const [publications, setPublications] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [enrichingIds, setEnrichingIds] = useState(new Set());
+  const [manualEntryMode, setManualEntryMode] = useState('doi');
+  const [manualLookupLoading, setManualLookupLoading] = useState(false);
+  const [manualLookupError, setManualLookupError] = useState('');
   const fileInputRef = React.useRef(null);
   const isHostedApp = typeof window !== 'undefined' && !['localhost', '127.0.0.1'].includes(window.location.hostname);
   const shouldSuggestLocalInstall = isHostedApp && error && /403|blocked|serverless|proxy/i.test(error);
@@ -196,7 +199,45 @@ const App = () => {
     };
     setPublications([entry, ...publications]);
     setShowAddModal(false);
+    setManualLookupError('');
+    setManualEntryMode('doi');
     setNewEntry({ title: '', authors: '', venue: '', year: new Date().getFullYear().toString(), citations: '0', link: '', doi: '' });
+  };
+
+  const handleFetchManualFromDoi = async () => {
+    if (!newEntry.doi?.trim()) {
+      setManualLookupError('Please enter a DOI first.');
+      return;
+    }
+
+    setManualLookupLoading(true);
+    setManualLookupError('');
+    try {
+      const response = await fetch('/api/doi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ doi: newEntry.doi.trim() })
+      });
+
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Failed to fetch publication details from DOI.');
+      }
+
+      setNewEntry(prev => ({
+        ...prev,
+        title: data.title || prev.title,
+        authors: data.authors || prev.authors,
+        venue: data.venue || prev.venue,
+        year: data.year || prev.year,
+        link: data.link || prev.link,
+        doi: data.doi || prev.doi
+      }));
+    } catch (err) {
+      setManualLookupError(err.message);
+    } finally {
+      setManualLookupLoading(false);
+    }
   };
 
   const stats = useMemo(() => {
@@ -407,7 +448,11 @@ const App = () => {
             <BookOpen className="w-4 h-4" /> Load Dataset
           </button>
           <button 
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setManualEntryMode('doi');
+              setManualLookupError('');
+              setShowAddModal(true);
+            }}
             className="flex items-center gap-2 text-slate-600 hover:text-primary-600 text-sm font-medium transition-colors"
           >
             <Plus className="w-4 h-4" /> Add Manual Entry
@@ -520,10 +565,10 @@ const App = () => {
               <tbody>
                 {publications.map((pub) => (
                   <tr key={pub.id} className={pub.isLead ? "bg-primary-50/30" : ""}>
-                    <td className="max-w-xs">
+                    <td className="max-w-md align-top">
                       <input
                         type="text"
-                        className="w-full bg-transparent font-medium text-slate-900 outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5 text-sm"
+                        className="w-full bg-transparent font-medium text-slate-900 outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5 text-sm whitespace-normal"
                         value={pub.title}
                         onChange={(e) => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, title: e.target.value } : p))}
                       />
@@ -533,18 +578,18 @@ const App = () => {
                         </a>
                       )}
                     </td>
-                    <td className="max-w-xs">
+                    <td className="max-w-md align-top">
                       <input
                         type="text"
-                        className="w-full bg-transparent text-xs outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5"
+                        className="w-full bg-transparent text-xs outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5 whitespace-normal"
                         value={pub.authors}
                         onChange={(e) => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, authors: e.target.value } : p))}
                       />
                     </td>
-                    <td>
+                    <td className="align-top">
                       <input
                         type="text"
-                        className="w-full bg-transparent text-xs italic outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5"
+                        className="w-full bg-transparent text-xs italic outline-none focus:bg-slate-50 focus:ring-1 focus:ring-primary-400 rounded px-1 py-0.5 whitespace-normal"
                         value={pub.venue}
                         onChange={(e) => setPublications(prev => prev.map(p => p.id === pub.id ? { ...p, venue: e.target.value } : p))}
                       />
@@ -620,14 +665,55 @@ const App = () => {
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-xl font-bold mb-4">Add Manual Publication</h3>
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1 mb-4">
+              <button
+                type="button"
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${manualEntryMode === 'doi' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+                onClick={() => setManualEntryMode('doi')}
+              >
+                Enter DOI & Extract
+              </button>
+              <button
+                type="button"
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${manualEntryMode === 'manual' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+                onClick={() => setManualEntryMode('manual')}
+              >
+                Enter Everything
+              </button>
+            </div>
             <form onSubmit={handleAddEntry} className="space-y-4">
+              {manualEntryMode === 'doi' && (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">DOI</label>
+                  <div className="flex gap-2">
+                    <input
+                      className="flex-1 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+                      placeholder="10.1000/xyz123 or https://doi.org/..."
+                      value={newEntry.doi}
+                      onChange={e => setNewEntry({ ...newEntry, doi: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleFetchManualFromDoi}
+                      disabled={manualLookupLoading}
+                      className="btn-primary whitespace-nowrap flex items-center gap-2"
+                    >
+                      {manualLookupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                      Extract
+                    </button>
+                  </div>
+                  {manualLookupError && (
+                    <p className="text-xs text-red-600">{manualLookupError}</p>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Title</label>
                 <input 
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500"
                   value={newEntry.title}
                   onChange={e => setNewEntry({...newEntry, title: e.target.value})}
-                  required
+                  required={manualEntryMode === 'manual'}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -638,7 +724,7 @@ const App = () => {
                     placeholder="Author 1, Author 2..."
                     value={newEntry.authors}
                     onChange={e => setNewEntry({...newEntry, authors: e.target.value})}
-                    required
+                    required={manualEntryMode === 'manual'}
                   />
                 </div>
                 <div>
@@ -679,7 +765,11 @@ const App = () => {
               <div className="flex justify-end gap-3 mt-6">
                 <button 
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setManualLookupError('');
+                    setManualEntryMode('doi');
+                  }}
                   className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors"
                 >
                   Cancel
